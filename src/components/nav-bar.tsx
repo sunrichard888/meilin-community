@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card } from "@/components/ui/card";
 
 interface NavBarProps {
   user?: {
     nickname?: string;
+    email?: string;
     avatar?: string;
   } | null;
   onSignOut?: () => void;
@@ -15,6 +17,7 @@ interface NavBarProps {
 
 export function NavBar({ user, onSignOut }: NavBarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -93,26 +96,65 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
                 </span>
               </Button>
 
-              {/* 用户头像 */}
-              <Avatar
-                className="h-9 w-9 cursor-pointer ring-2 ring-primary/20"
-                role="button"
-                aria-label="用户菜单"
-              >
-                <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
-                  {user.nickname?.[0]?.toUpperCase() || "?"}
-                </AvatarFallback>
-              </Avatar>
+              {/* 用户头像 + 下拉菜单 */}
+              <div className="relative">
+                <Avatar
+                  className="h-9 w-9 cursor-pointer ring-2 ring-primary/20 hover:ring-primary/40 transition-shadow"
+                  role="button"
+                  aria-label="用户菜单"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                >
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                    {user.nickname?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "?"}
+                  </AvatarFallback>
+                </Avatar>
 
-              {/* 退出按钮（移动端） */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onSignOut}
-                className="sm:hidden"
-              >
-                退出
-              </Button>
+                {/* 用户下拉菜单 */}
+                {userMenuOpen && (
+                  <>
+                    {/* 点击外部关闭 */}
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setUserMenuOpen(false)}
+                    />
+                    <Card className="absolute right-0 top-12 w-56 p-2 z-50 shadow-lg border-primary/10 animate-scale-in">
+                      <div className="p-3 border-b">
+                        <p className="font-semibold text-sm truncate">
+                          {user.nickname || "新用户"}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                      <div className="py-2">
+                        <Link 
+                          href="/dashboard" 
+                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          ⚙️ 个人设置
+                        </Link>
+                        <Link 
+                          href="/messages" 
+                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          💬 我的消息
+                        </Link>
+                        <button 
+                          onClick={() => {
+                            onSignOut?.();
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-destructive/10 text-destructive transition-colors"
+                        >
+                          🚪 退出登录
+                        </button>
+                      </div>
+                    </Card>
+                  </>
+                )}
+              </div>
 
               {/* 移动端菜单按钮 */}
               <Button
@@ -196,7 +238,7 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
                   className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  ⚙️ 控制台
+                  ⚙️ 个人设置
                 </Link>
                 <button
                   onClick={() => {
