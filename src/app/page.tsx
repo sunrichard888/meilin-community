@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { usePosts } from "@/lib/hooks";
@@ -10,6 +11,7 @@ import { Avatar } from "@/components/ui/avatar";
 export default function Home() {
   const { user, signOut } = useAuth();
   const { posts, loading, addPost, likePost } = usePosts();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,6 +66,7 @@ export default function Home() {
         {user && (
           <Card className="mb-6 p-4">
             <textarea
+              ref={textareaRef}
               className="w-full resize-none border-0 bg-transparent p-0 text-base focus-visible:outline-none focus-visible:ring-0"
               placeholder="分享你的想法..."
               rows={3}
@@ -76,10 +79,9 @@ export default function Home() {
             />
             <div className="flex justify-end mt-2">
               <Button onClick={() => {
-                const textarea = e.currentTarget.querySelector('textarea');
-                if (textarea) {
-                  addPost(textarea.value);
-                  textarea.value = '';
+                if (textareaRef.current) {
+                  addPost(textareaRef.current.value);
+                  textareaRef.current.value = '';
                 }
               }}>
                 发布
