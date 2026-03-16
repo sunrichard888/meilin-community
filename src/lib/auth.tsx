@@ -60,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: authData.user.email || '',
             nickname: authData.user.user_metadata?.nickname || '新用户',
             role: 'user',
+            created_at: authData.user.created_at || new Date().toISOString(),
           });
         }
       }
