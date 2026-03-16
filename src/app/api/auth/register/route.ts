@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: false, // false = 需要邮箱确认，将发送激活邮件
+      email_confirm: true, // true = 自动确认邮箱，不发送邮件（避免频率限制）
     });
 
     if (authError) throw authError;
