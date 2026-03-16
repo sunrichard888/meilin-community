@@ -64,7 +64,11 @@ CREATE INDEX IF NOT EXISTS likes_user_id_idx ON likes(user_id);
 CREATE INDEX IF NOT EXISTS likes_post_id_idx ON likes(post_id);
 
 -- 创建触发器：自动更新点赞数
-CREATE OR REPLACE FUNCTION update_post_likes_count()
+-- 先删除已存在的触发器和函数（如果存在）
+DROP TRIGGER IF EXISTS posts_likes_count_trigger ON likes;
+DROP FUNCTION IF EXISTS update_post_likes_count();
+
+CREATE FUNCTION update_post_likes_count()
 RETURNS TRIGGER AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
@@ -81,7 +85,10 @@ AFTER INSERT OR DELETE ON likes
 FOR EACH ROW EXECUTE FUNCTION update_post_likes_count();
 
 -- 创建触发器：自动更新评论数
-CREATE OR REPLACE FUNCTION update_post_comments_count()
+DROP TRIGGER IF EXISTS posts_comments_count_trigger ON comments;
+DROP FUNCTION IF EXISTS update_post_comments_count();
+
+CREATE FUNCTION update_post_comments_count()
 RETURNS TRIGGER AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
@@ -103,6 +110,22 @@ ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
+
+-- 先删除已存在的策略（如果存在）
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON users;
+DROP POLICY IF EXISTS "Users can update own profile" ON users;
+DROP POLICY IF EXISTS "Posts are viewable by everyone" ON posts;
+DROP POLICY IF EXISTS "Users can insert own posts" ON posts;
+DROP POLICY IF EXISTS "Users can update own posts" ON posts;
+DROP POLICY IF EXISTS "Users can delete own posts" ON posts;
+DROP POLICY IF EXISTS "Comments are viewable by everyone" ON comments;
+DROP POLICY IF EXISTS "Users can insert own comments" ON comments;
+DROP POLICY IF EXISTS "Users can delete own comments" ON comments;
+DROP POLICY IF EXISTS "Users can view own messages" ON messages;
+DROP POLICY IF EXISTS "Users can send messages" ON messages;
+DROP POLICY IF EXISTS "Likes are viewable by everyone" ON likes;
+DROP POLICY IF EXISTS "Users can insert own likes" ON likes;
+DROP POLICY IF EXISTS "Users can delete own likes" ON likes;
 
 -- Users 策略
 CREATE POLICY "Public profiles are viewable by everyone"
