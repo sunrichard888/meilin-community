@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { usePosts } from "@/lib/hooks";
 import { NavBar } from "@/components/nav-bar";
@@ -85,10 +85,25 @@ const samplePosts: any[] = [
 ];
 
 function HomeContent() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const { posts, loading, addPost, likePost } = usePosts();
   const { showToast } = useToast();
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  // 登录成功后显示欢迎 Toast
+  useEffect(() => {
+    if (user && !authLoading) {
+      setShowWelcome(true);
+    }
+  }, [user, authLoading]);
+
+  useEffect(() => {
+    if (showWelcome && user) {
+      showToast(`欢迎回来，${user.nickname || '邻居'}！👋`, 'success');
+      setShowWelcome(false);
+    }
+  }, [showWelcome, user, showToast]);
 
   // 合并示例帖子和真实帖子
   const allPosts = posts.length > 0 ? posts : samplePosts;

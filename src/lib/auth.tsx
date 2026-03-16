@@ -51,6 +51,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (data && !error) {
         setUser(data as User);
+      } else {
+        // 如果 users 表中没有记录，创建一个基本用户对象
+        const { data: authData } = await supabase.auth.getUser(userId);
+        if (authData?.user) {
+          setUser({
+            id: authData.user.id,
+            email: authData.user.email || '',
+            nickname: authData.user.user_metadata?.nickname || '新用户',
+            role: 'user',
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading user:', error);
@@ -76,7 +87,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
       if (data.user) {
+        // 等待用户数据加载完成，确保 user 状态已更新
         await loadUser(data.user.id);
+        // 额外等待 React 状态更新传播
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       return { error: null };

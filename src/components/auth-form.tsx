@@ -154,9 +154,12 @@ export function AuthForm({ type }: AuthFormProps) {
         const errorData = errorMessages[result.error] || errorMessages["default"];
         setError(errorData);
       } else {
-        // 成功跳转
-        router.push("/");
-        router.refresh();
+        // 成功跳转 - 等待认证状态更新
+        // onAuthStateChange 会自动更新 user 状态，短暂延迟确保状态同步
+        setTimeout(() => {
+          router.push("/");
+          router.refresh();
+        }, 300);
       }
     } catch (err: any) {
       const errorData = errorMessages[err.message] || errorMessages["default"];
