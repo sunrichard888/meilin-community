@@ -52,12 +52,13 @@ function AvatarEditor({ user }: { user: any }) {
 }
 
 // 修改密码组件
-function ChangePassword() {
+function ChangePassword({ user }: { user: any }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
+  const { changePassword: updatePassword } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,14 +74,19 @@ function ChangePassword() {
     }
 
     setLoading(true);
-    // TODO: 调用修改密码 API
-    setTimeout(() => {
-      showToast("密码修改成功", "success");
+    
+    const { error } = await updatePassword!(currentPassword, newPassword);
+    
+    if (error) {
+      showToast(error, "error");
+    } else {
+      showToast("密码修改成功，请使用新密码登录", "success");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setLoading(false);
-    }, 1000);
+    }
+    
+    setLoading(false);
   };
 
   return (
@@ -253,7 +259,7 @@ function DashboardContent() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ChangePassword />
+                    <ChangePassword user={user} />
                   </CardContent>
                 </Card>
               </div>
