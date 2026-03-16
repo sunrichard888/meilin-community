@@ -9,13 +9,72 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-// 错误文案映射
-const errorMessages: Record<string, string> = {
-  "Invalid login credentials": "邮箱或密码错误，请重试",
-  "User already registered": "该邮箱已注册，请直接登录",
-  "Invalid email": "邮箱格式不正确",
-  "Password should be at least 6 characters": "密码至少 6 位",
-  "Network error": "网络连接失败，请检查网络后重试",
+// 错误文案映射（Don Norman UX 改进）
+const errorMessages: Record<string, {
+  title: string;
+  message: string;
+  action?: string;
+}> = {
+  "Invalid login credentials": {
+    title: "登录失败",
+    message: "邮箱或密码不正确",
+    action: "请检查后重试，或找回密码"
+  },
+  "User already registered": {
+    title: "邮箱已注册",
+    message: "该邮箱已注册过美邻网",
+    action: "请直接登录或使用其他邮箱"
+  },
+  "该邮箱已注册，请直接登录": {
+    title: "邮箱已注册",
+    message: "该邮箱已注册过美邻网",
+    action: "请直接登录或使用其他邮箱"
+  },
+  "Invalid email": {
+    title: "邮箱格式不正确",
+    message: "请输入有效的邮箱地址",
+    action: "示例：your@email.com"
+  },
+  "邮箱格式不正确": {
+    title: "邮箱格式不正确",
+    message: "请输入有效的邮箱地址",
+    action: "示例：your@email.com"
+  },
+  "Password should be at least 6 characters": {
+    title: "密码长度不足",
+    message: "密码至少需要 6 位字符",
+    action: "建议使用 8 位以上，包含字母和数字"
+  },
+  "密码至少需要 6 位字符": {
+    title: "密码长度不足",
+    message: "密码至少需要 6 位字符",
+    action: "建议使用 8 位以上，包含字母和数字"
+  },
+  "Email already in use": {
+    title: "邮箱已被使用",
+    message: "该邮箱已注册过账号",
+    action: "请使用其他邮箱或直接登录"
+  },
+  "Network error": {
+    title: "网络连接失败",
+    message: "无法连接到服务器",
+    action: "请检查网络后重试"
+  },
+  "认证失败": {
+    title: "认证失败",
+    message: "账号或密码验证未通过",
+    action: "请检查账号密码，或联系管理员"
+  },
+  "操作受限": {
+    title: "操作受限",
+    message: "当前操作受到权限限制",
+    action: "请联系社区管理员协助处理"
+  },
+  "default": {
+    title: "操作未能完成",
+    message: "遇到了一些问题，请稍后重试",
+    action: "如问题持续，请联系客服"
+  }
 };
 
 interface AuthFormData {
@@ -37,7 +96,11 @@ export function AuthForm({ type }: AuthFormProps) {
     password: "",
     nickname: "",
   });
-  const [error, setError] = useState("");
+  const [error, setError] = useState<{
+    title: string;
+    message: string;
+    action?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
@@ -76,7 +139,7 @@ export function AuthForm({ type }: AuthFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
+    setError(null);
 
     try {
       let result;
@@ -88,16 +151,16 @@ export function AuthForm({ type }: AuthFormProps) {
 
       if (result?.error) {
         // 错误文案人性化处理
-        const friendlyMessage = errorMessages[result.error] || result.error;
-        setError(friendlyMessage);
+        const errorData = errorMessages[result.error] || errorMessages["default"];
+        setError(errorData);
       } else {
         // 成功跳转
         router.push("/");
         router.refresh();
       }
     } catch (err: any) {
-      const friendlyMessage = errorMessages[err.message] || "操作失败，请稍后重试";
-      setError(friendlyMessage);
+      const errorData = errorMessages[err.message] || errorMessages["default"];
+      setError(errorData);
     } finally {
       setLoading(false);
     }
@@ -153,11 +216,31 @@ export function AuthForm({ type }: AuthFormProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* 错误提示 */}
+            {/* 错误提示 - Don Norman UX 改进 */}
             {error && (
-              <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md flex items-start gap-2" role="alert">
-                <span className="text-lg">⚠️</span>
-                <span>{error}</span>
+              <div className="p-4 rounded-lg border bg-destructive/5 border-destructive/20" role="alert">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">⚠️</span>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm text-destructive">
+                      {error.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {error.message}
+                    </p>
+                    {error.action && (
+                      <p className="text-xs text-primary mt-2">
+                        💡 {error.action}
+                      </p>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => setError(null)}
+                    className="text-muted-foreground hover:text-foreground text-lg leading-none"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             )}
 

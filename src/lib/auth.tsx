@@ -79,26 +79,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signUp(email: string, password: string, nickname: string) {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // 调用服务端 API 进行注册（绕过 RLS）
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, nickname }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '注册失败');
+      }
+
+      // 注册成功后，让客户端登录以建立会话
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
-      if (data.user) {
-        // 创建用户资料
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: data.user.id,
-            email,
-            nickname,
-            role: 'user',
-          });
-
-        if (profileError) throw profileError;
-        await loadUser(data.user.id);
-      }
+      if (signInError) throw signInError;
 
       return { error: null };
     } catch (error: any) {
