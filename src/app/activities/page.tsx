@@ -1,2 +1,2 @@
-import ComingSoonPage from "./market/page";
+import ComingSoonPage from "../market/page";
 export default ComingSoonPage;
