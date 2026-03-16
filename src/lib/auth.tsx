@@ -115,15 +115,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(data.error || '注册失败');
       }
 
-      // 注册成功后，让客户端登录以建立会话
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) throw signInError;
-
-      return { error: null };
+      // 注册成功后，不自动登录，提示用户检查邮箱
+      // 用户需要点击邮件中的确认链接后才能登录
+      return { 
+        error: null,
+        needsEmailConfirmation: true 
+      };
     } catch (error: any) {
       return { error: error.message || '注册失败' };
     }

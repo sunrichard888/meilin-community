@@ -154,12 +154,22 @@ export function AuthForm({ type }: AuthFormProps) {
         const errorData = errorMessages[result.error] || errorMessages["default"];
         setError(errorData);
       } else {
-        // 成功跳转 - 等待认证状态更新
-        // onAuthStateChange 会自动更新 user 状态，短暂延迟确保状态同步
-        setTimeout(() => {
-          router.push("/");
-          router.refresh();
-        }, 300);
+        // 检查是否需要邮箱确认
+        if ((result as any)?.needsEmailConfirmation) {
+          // 显示成功消息，提示检查邮箱
+          setError({
+            title: "注册成功！",
+            message: "请检查邮箱中的激活邮件，点击链接完成注册",
+            action: "未收到邮件？请检查垃圾邮件箱"
+          });
+          setLoading(false);
+        } else {
+          // 无需确认，直接登录并跳转
+          setTimeout(() => {
+            router.push("/");
+            router.refresh();
+          }, 300);
+        }
       }
     } catch (err: any) {
       const errorData = errorMessages[err.message] || errorMessages["default"];
