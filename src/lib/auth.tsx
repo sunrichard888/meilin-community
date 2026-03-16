@@ -66,7 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        // 记录详细错误日志
+        console.error('SignIn Error:', {
+          message: error.message,
+          code: error.code,
+          status: error.status,
+        });
+        throw error;
+      }
       if (data.user) {
         await loadUser(data.user.id);
       }
