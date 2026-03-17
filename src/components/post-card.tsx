@@ -3,12 +3,14 @@
 import { PostData } from "@/actions/posts";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import ReportButton from "./report-button";
 
 interface PostCardProps {
   post: PostData;
+  userToken?: string;
 }
 
-function PostCardComponent({ post, onLike, isLiked }: PostCardProps & { onLike?: (id: string) => void; isLiked?: boolean }) {
+function PostCardComponent({ post, userToken, onLike, isLiked }: PostCardProps & { onLike?: (id: string) => void; isLiked?: boolean }) {
   const timeAgo = formatDistanceToNow(new Date(post.created_at), {
     addSuffix: true,
     locale: zhCN,
@@ -24,6 +26,7 @@ function PostCardComponent({ post, onLike, isLiked }: PostCardProps & { onLike?:
               src={post.user.avatar}
               alt={post.user.nickname}
               className="w-12 h-12 rounded-full object-cover"
+              loading="lazy"
             />
           ) : (
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
@@ -35,23 +38,32 @@ function PostCardComponent({ post, onLike, isLiked }: PostCardProps & { onLike?:
         {/* 内容 */}
         <div className="flex-1 min-w-0">
           {/* 头部信息 */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className="font-semibold">
-              {post.user?.nickname || "匿名用户"}
-            </span>
-            {post.community_name && (
-              <>
-                <span className="text-muted-foreground">·</span>
-                <span className="text-sm text-muted-foreground">
-                  {post.community_name}
-                  {post.building_number && ` ${post.building_number}`}
-                </span>
-              </>
-            )}
-            {post.is_pinned && (
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                置顶
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">
+                {post.user?.nickname || "匿名用户"}
               </span>
+              {post.community_name && (
+                <>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="text-sm text-muted-foreground">
+                    {post.community_name}
+                    {post.building_number && ` ${post.building_number}`}
+                  </span>
+                </>
+              )}
+              {post.is_pinned && (
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                  置顶
+                </span>
+              )}
+            </div>
+
+            {/* 举报按钮（右上角） */}
+            {userToken && (
+              <div className="flex-shrink-0">
+                <ReportButton postId={post.id} token={userToken} />
+              </div>
             )}
           </div>
 
@@ -69,6 +81,7 @@ function PostCardComponent({ post, onLike, isLiked }: PostCardProps & { onLike?:
                   src={img}
                   alt={`图片 ${index + 1}`}
                   className="rounded-lg aspect-square object-cover hover:opacity-90 transition-opacity"
+                  loading="lazy"
                 />
               ))}
             </div>
@@ -80,11 +93,17 @@ function PostCardComponent({ post, onLike, isLiked }: PostCardProps & { onLike?:
             
             {/* 互动数据 */}
             <div className="flex items-center gap-4">
-              <button className="flex items-center gap-1 hover:text-primary transition-colors">
+              <button 
+                className="flex items-center gap-1 hover:text-primary transition-colors"
+                aria-label={`点赞，当前${post.likes_count}个赞`}
+              >
                 <span>❤️</span>
                 <span>{post.likes_count}</span>
               </button>
-              <button className="flex items-center gap-1 hover:text-primary transition-colors">
+              <button 
+                className="flex items-center gap-1 hover:text-primary transition-colors"
+                aria-label={`评论，当前${post.comments_count}条评论`}
+              >
                 <span>💬</span>
                 <span>{post.comments_count}</span>
               </button>
