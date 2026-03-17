@@ -1,18 +1,32 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "./supabase";
-import { User } from "./types";
+import { createClient } from "@supabase/supabase-js";
 
-interface AuthContextType {
+export interface User {
+  id: string;
+  email: string;
+  nickname: string;
+  avatar?: string;
+  role: string;
+  created_at?: string;
+}
+
+export type AuthContextType = {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, nickname: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
-}
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: string | null }>;
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -28,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // 监听认证变化
+    // 监听认证状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         loadUser(session.user.id);
@@ -52,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data && !error) {
         setUser(data as User);
       } else {
-        // 如果 users 表中没有记录，创建一个基本用户对象
+        // 如果 users 表中没有记录，从 auth.user 创建基本用户对象
         const { data: authData } = await supabase.auth.getUser(userId);
         if (authData?.user) {
           setUser({
@@ -78,20 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       });
 
-      if (error) {
-        // 记录详细错误日志
-        console.error('SignIn Error:', {
-          message: error.message,
-          code: error.code,
-          status: error.status,
-        });
-        throw error;
-      }
+      if (error) throw error;
       if (data.user) {
-        // 等待用户数据加载完成，确保 user 状态已更新
         await loadUser(data.user.id);
-        // 额外等待 React 状态更新传播
-        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       return { error: null };
@@ -102,7 +105,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signUp(email: string, password: string, nickname: string) {
     try {
-      // 调用服务端 API 进行注册（绕过 RLS）
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -115,8 +117,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(data.error || '注册失败');
       }
 
-      // 注册成功后，不自动登录，提示用户检查邮箱
-      // 用户需要点击邮件中的确认链接后才能登录
       return { 
         error: null,
         needsEmailConfirmation: true 
@@ -127,8 +127,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+    }
     setUser(null);
+  }
+
+  async function changePassword(currentPassword: string, newPassword: string) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        return { error: '用户未登录' };
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        return { error: '当前密码错误' };
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        return { error: error.message || '密码更新失败' };
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message || '密码更新失败' };
+    }
   }
 
   return (
