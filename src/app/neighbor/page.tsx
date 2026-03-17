@@ -12,7 +12,7 @@ import { ToastProvider } from "@/components/ui/toast";
 
 function NeighborProfileForm() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut, getToken } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -41,7 +41,12 @@ function NeighborProfileForm() {
 
   async function fetchProfile() {
     try {
-      const response = await fetch("/api/neighbor/profile");
+      const token = await getToken();
+      const response = await fetch("/api/neighbor/profile", {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
       const data = await response.json();
 
       if (data.data) {
@@ -122,9 +127,13 @@ function NeighborProfileForm() {
     }
 
     try {
+      const token = await getToken();
       const response = await fetch("/api/neighbor/profile", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
         body: JSON.stringify(formData),
       });
 

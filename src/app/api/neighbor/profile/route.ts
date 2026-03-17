@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 
 const VALIDATION_RULES = {
   communityName: {
@@ -28,23 +28,30 @@ const VALIDATION_RULES = {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient(
+    // 使用 Service Role Key 绕过 RLS
+    const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll().map(cookie => ({
-              name: cookie.name,
-              value: cookie.value,
-            }));
-          },
-        },
-      }
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader) {
+      console.error('[POST Neighbor Profile] No auth header');
+      return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // 验证 token 获取用户
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+
     if (authError || !user) {
+      console.error('[POST Neighbor Profile] Auth error:', authError);
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
 
@@ -67,6 +74,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '自我介绍不超过 500 字', field: 'introduction' }, { status: 400 });
     }
 
+    // 检查是否已存在
     const { data: existing } = await supabase
       .from('neighbor_profiles')
       .select('id')
@@ -101,7 +109,7 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error: any) {
-    console.error('Error creating neighbor profile:', error);
+    console.error('[POST Neighbor Profile] Error:', error);
     return NextResponse.json(
       { error: error.message || '提交失败' },
       { status: 500 }
@@ -111,23 +119,29 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient(
+    // 使用 Service Role Key 绕过 RLS
+    const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll().map(cookie => ({
-              name: cookie.name,
-              value: cookie.value,
-            }));
-          },
-        },
-      }
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader) {
+      return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // 验证 token 获取用户
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+
     if (authError || !user) {
+      console.error('[GET Neighbor Profile] Auth error:', authError);
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
 
@@ -153,7 +167,7 @@ export async function GET(request: NextRequest) {
       } : null
     });
   } catch (error: any) {
-    console.error('Error fetching neighbor profile:', error);
+    console.error('[GET Neighbor Profile] Error:', error);
     return NextResponse.json(
       { error: error.message || '获取失败' },
       { status: 500 }
