@@ -62,7 +62,9 @@ function PrivacySettingsForm() {
 
   async function fetchSettings() {
     try {
-      const response = await fetch("/api/privacy-settings");
+      const response = await fetch("/api/privacy-settings", {
+        credentials: 'include',
+      });
       const data = await response.json();
 
       if (data.data) {
@@ -138,6 +140,7 @@ function PrivacySettingsForm() {
       const response = await fetch("/api/privacy-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({
           show_community_name: formData.showCommunityName,
           show_building_info: formData.showBuildingInfo,

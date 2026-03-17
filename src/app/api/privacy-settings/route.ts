@@ -1,22 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const { error: authError, data: authData } = await getAuthUser();
-    if (authError || !authData?.user) {
-      return NextResponse.json({ error: '请先登录' }, { status: 401 });
-    }
-
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
+    // 从请求头获取 cookie
+    const authHeader = request.headers.get('authorization');
+    const cookie = request.headers.get('cookie');
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader?.replace('Bearer ', '') || cookie?.split('; ').find(c => c.startsWith('sb-'))?.split('=')[1]
+    );
+
+    if (authError || !user) {
+      return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    }
+
     const { data, error } = await supabase
       .from('user_privacy_settings')
       .select('*')
-      .eq('user_id', authData.user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = 未找到记录
@@ -59,8 +66,20 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { error: authError, data: authData } = await getAuthUser();
-    if (authError || !authData?.user) {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // 从请求头获取 cookie
+    const authHeader = request.headers.get('authorization');
+    const cookie = request.headers.get('cookie');
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader?.replace('Bearer ', '') || cookie?.split('; ').find(c => c.startsWith('sb-'))?.split('=')[1]
+    );
+
+    if (authError || !user) {
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
 
@@ -88,16 +107,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
     // 检查是否已存在
     const { data: existing } = await supabase
       .from('user_privacy_settings')
       .select('id')
-      .eq('user_id', authData.user.id)
+      .eq('user_id', user.id)
       .single();
 
     let result;
@@ -120,7 +134,7 @@ export async function POST(request: NextRequest) {
           notify_community_updates,
           privacy_preset,
         })
-        .eq('user_id', authData.user.id)
+        .eq('user_id', user.id)
         .select()
         .single();
 
@@ -131,7 +145,7 @@ export async function POST(request: NextRequest) {
       const { data, error } = await supabase
         .from('user_privacy_settings')
         .insert({
-          user_id: authData.user.id,
+          user_id: user.id,
           show_community_name,
           show_building_info,
           show_introduction,
@@ -163,13 +177,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// 辅助函数
-async function getAuthUser() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-  return supabase.auth.getUser();
 }
