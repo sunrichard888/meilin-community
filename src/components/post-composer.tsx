@@ -99,7 +99,7 @@ function PostComposerContent() {
 
             {/* 字符计数 */}
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>支持 emoji 😊</span>
+              <span>😊 支持表情符号</span>
               <span className={charCount > 900 ? "text-destructive" : ""}>
                 {charCount}/1000
               </span>
