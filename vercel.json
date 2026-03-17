@@ -1,5 +1,5 @@
 {
   "framework": "nextjs",
-  "installCommand": "npm install --ignore-scripts --no-audit --no-fund",
+  "installCommand": "yarn install --frozen-lockfile",
   "regions": ["sin1"]
 }
