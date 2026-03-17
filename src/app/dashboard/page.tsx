@@ -175,8 +175,8 @@ function DashboardContent() {
 
   const menuItems = [
     { id: "account", label: "账号安全", icon: "🔐" },
-    { id: "profile", label: "邻里信息", icon: "🏠", comingSoon: true },
-    { id: "privacy", label: "隐私设置", icon: "🔒", comingSoon: true },
+    { id: "profile", label: "邻里信息", icon: "🏠", href: "/neighbor" },
+    { id: "privacy", label: "隐私设置", icon: "🔒", href: "/privacy-settings" },
     { id: "content", label: "内容管理", icon: "📝", comingSoon: true },
     { id: "notification", label: "通知设置", icon: "🔔", comingSoon: true },
   ];
@@ -202,16 +202,22 @@ function DashboardContent() {
                 {menuItems.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => !item.comingSoon && setActiveTab(item.id)}
+                    onClick={() => {
+                      if (item.href) {
+                        router.push(item.href);
+                      } else {
+                        setActiveTab(item.id);
+                      }
+                    }}
                     className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                      activeTab === item.id
+                      activeTab === item.id && !item.href
                         ? "bg-primary/10 text-primary font-medium"
                         : "hover:bg-muted"
-                    } ${item.comingSoon ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                    } ${item.href ? "cursor-pointer" : item.comingSoon ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                   >
                     <span className="mr-2">{item.icon}</span>
                     {item.label}
-                    {item.comingSoon && (
+                    {item.comingSoon && !item.href && (
                       <span className="ml-2 text-xs text-muted-foreground">开发中</span>
                     )}
                   </button>
