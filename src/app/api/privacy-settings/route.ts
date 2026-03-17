@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient(
+    // 创建 Supabase SSR 客户端
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll().map(cookie => ({
+              name: cookie.name,
+              value: cookie.value,
+            }));
+          },
+        },
+      }
     );
 
-    // 从请求头获取 cookie
-    const authHeader = request.headers.get('authorization');
-    const cookie = request.headers.get('cookie');
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader?.replace('Bearer ', '') || cookie?.split('; ').find(c => c.startsWith('sb-'))?.split('=')[1]
-    );
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
@@ -26,11 +31,10 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = 未找到记录
+    if (error && error.code !== 'PGRST116') {
       throw error;
     }
 
-    // 如果没有设置，返回默认值
     if (!data) {
       return NextResponse.json({ 
         success: true, 
@@ -51,10 +55,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error: any) {
     console.error('Error fetching privacy settings:', error);
     return NextResponse.json(
@@ -66,18 +67,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient(
+    // 创建 Supabase SSR 客户端
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll().map(cookie => ({
+              name: cookie.name,
+              value: cookie.value,
+            }));
+          },
+        },
+      }
     );
 
-    // 从请求头获取 cookie
-    const authHeader = request.headers.get('authorization');
-    const cookie = request.headers.get('cookie');
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader?.replace('Bearer ', '') || cookie?.split('; ').find(c => c.startsWith('sb-'))?.split('=')[1]
-    );
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
@@ -99,15 +105,10 @@ export async function POST(request: NextRequest) {
       privacy_preset,
     } = body;
 
-    // 验证必填字段
     if (privacy_preset && !['public', 'neighbors_only', 'private', 'custom'].includes(privacy_preset)) {
-      return NextResponse.json(
-        { error: '无效的隐私预设' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '无效的隐私预设' }, { status: 400 });
     }
 
-    // 检查是否已存在
     const { data: existing } = await supabase
       .from('user_privacy_settings')
       .select('id')
@@ -117,7 +118,6 @@ export async function POST(request: NextRequest) {
     let result;
     
     if (existing) {
-      // 更新现有设置
       const { data, error } = await supabase
         .from('user_privacy_settings')
         .update({
@@ -141,7 +141,6 @@ export async function POST(request: NextRequest) {
       if (error) throw error;
       result = data;
     } else {
-      // 创建新设置
       const { data, error } = await supabase
         .from('user_privacy_settings')
         .insert({
@@ -166,10 +165,7 @@ export async function POST(request: NextRequest) {
       result = data;
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data: result
-    });
+    return NextResponse.json({ success: true, data: result });
   } catch (error: any) {
     console.error('Error saving privacy settings:', error);
     return NextResponse.json(
