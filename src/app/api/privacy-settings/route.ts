@@ -3,9 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: NextRequest) {
   try {
+    // 使用 Service Role Key 绕过 RLS
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
     const authHeader = request.headers.get('authorization');
@@ -15,17 +16,20 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    console.log('[GET Privacy Settings] Token:', token ? 'present' : 'missing');
     
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    // 验证 token 获取用户
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
 
     if (authError || !user) {
       console.error('[GET Privacy Settings] Auth error:', authError);
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
 
-    console.log('[GET Privacy Settings] User ID:', user.id);
-
+    // 使用 service role key 查询
     const { data, error } = await supabase
       .from('user_privacy_settings')
       .select('*')
@@ -61,7 +65,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[GET Privacy Settings] Error:', error);
     return NextResponse.json(
-      { error: error.message || '获取失败', details: error.toString() },
+      { error: error.message || '获取失败' },
       { status: 500 }
     );
   }
@@ -69,9 +73,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // 使用 Service Role Key 绕过 RLS
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
     const authHeader = request.headers.get('authorization');
@@ -82,20 +87,20 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    console.log('[POST Privacy Settings] Token:', token ? 'present' : 'missing');
     
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    // 验证 token 获取用户
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
 
     if (authError || !user) {
       console.error('[POST Privacy Settings] Auth error:', authError);
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
 
-    console.log('[POST Privacy Settings] User ID:', user.id);
-
     const body = await request.json();
-    console.log('[POST Privacy Settings] Body:', JSON.stringify(body, null, 2));
-
     const {
       show_community_name,
       show_building_info,
@@ -116,20 +121,15 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查是否已存在
-    const { data: existing, error: existingError } = await supabase
+    const { data: existing } = await supabase
       .from('user_privacy_settings')
       .select('id')
       .eq('user_id', user.id)
       .single();
 
-    if (existingError && existingError.code !== 'PGRST116') {
-      console.error('[POST Privacy Settings] Check existing error:', existingError);
-    }
-
     let result;
     
     if (existing) {
-      console.log('[POST Privacy Settings] Updating existing record:', existing.id);
       const { data, error } = await supabase
         .from('user_privacy_settings')
         .update({
@@ -150,13 +150,9 @@ export async function POST(request: NextRequest) {
         .select()
         .single();
 
-      if (error) {
-        console.error('[POST Privacy Settings] Update error:', error);
-        throw error;
-      }
+      if (error) throw error;
       result = data;
     } else {
-      console.log('[POST Privacy Settings] Inserting new record');
       const { data, error } = await supabase
         .from('user_privacy_settings')
         .insert({
@@ -177,16 +173,7 @@ export async function POST(request: NextRequest) {
         .select()
         .single();
 
-      if (error) {
-        console.error('[POST Privacy Settings] Insert error:', error);
-        console.error('[POST Privacy Settings] Insert error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        });
-        throw error;
-      }
+      if (error) throw error;
       result = data;
     }
 
@@ -194,7 +181,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[POST Privacy Settings] Error:', error);
     return NextResponse.json(
-      { error: error.message || '保存失败', details: error.toString() },
+      { error: error.message || '保存失败' },
       { status: 500 }
     );
   }
