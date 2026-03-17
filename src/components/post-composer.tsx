@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { ToastProvider } from "@/components/ui/toast";
+import EmojiPicker from "@/components/emoji-picker";
 
 function PostComposerContent() {
   const { getToken } = useAuth();
@@ -82,24 +83,34 @@ function PostComposerContent() {
     setCharCount(value.length);
   };
 
+  const handleEmojiSelect = (emoji: string) => {
+    setContent(prev => prev + emoji);
+  };
+
   return (
     <Card>
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
-            {/* 输入框 */}
-            <Textarea
-              value={content}
-              onChange={handleTextChange}
-              onKeyDown={handleKeyDown}
-              placeholder="分享你的想法... (Ctrl+Enter 发布)"
-              className="min-h-[120px] resize-y"
-              maxLength={1000}
-            />
+            {/* 输入框和表情选择器 */}
+            <div className="relative">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">😊 支持表情符号</span>
+                <EmojiPicker onSelect={handleEmojiSelect} />
+              </div>
+              <Textarea
+                value={content}
+                onChange={handleTextChange}
+                onKeyDown={handleKeyDown}
+                placeholder="分享你的想法... (Ctrl+Enter 发布)"
+                className="min-h-[120px] resize-y"
+                maxLength={1000}
+              />
+            </div>
 
             {/* 字符计数 */}
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>😊 支持表情符号</span>
+              <span></span>
               <span className={charCount > 900 ? "text-destructive" : ""}>
                 {charCount}/1000
               </span>
