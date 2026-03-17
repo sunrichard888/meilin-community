@@ -8,12 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { ToastProvider } from "@/components/ui/toast";
 import EmojiPicker from "@/components/emoji-picker";
+import ImageUploader from "@/components/image-uploader";
 
 function PostComposerContent() {
   const { getToken } = useAuth();
   const { showToast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   const [content, setContent] = useState("");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [charCount, setCharCount] = useState(0);
 
@@ -47,7 +49,14 @@ function PostComposerContent() {
 
       const response = await fetch('/api/posts', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify({
+          content,
+          images: imageUrls,
+        }),
       });
 
       const result = await response.json();
@@ -87,6 +96,10 @@ function PostComposerContent() {
     setContent(prev => prev + emoji);
   };
 
+  const handleImagesChange = (urls: string[]) => {
+    setImageUrls(urls);
+  };
+
   return (
     <Card>
       <CardContent className="pt-6">
@@ -107,14 +120,6 @@ function PostComposerContent() {
               {/* 左侧：表情和图片控制 */}
               <div className="flex items-center gap-1">
                 <EmojiPicker onSelect={handleEmojiSelect} />
-                <button
-                  type="button"
-                  disabled
-                  className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="图片上传（开发中）"
-                >
-                  📷
-                </button>
               </div>
 
               {/* 右侧：字符计数 */}
@@ -123,18 +128,14 @@ function PostComposerContent() {
               </span>
             </div>
 
-            {/* 图片上传占位提示 */}
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                📷 图片上传功能开发中（P2 实现）
-              </p>
-            </div>
+            {/* 图片上传组件 */}
+            <ImageUploader onImagesChange={handleImagesChange} maxImages={3} maxSizeMB={2} />
 
             {/* 发布按钮 */}
             <div className="flex justify-end">
               <Button 
                 type="submit" 
-                disabled={loading || !content.trim()}
+                disabled={loading || !content.trim() || (imageUrls.length > 0 && imageUrls.some(url => !url))}
                 className="w-full sm:w-auto"
               >
                 {loading ? "发布中..." : "发布"}

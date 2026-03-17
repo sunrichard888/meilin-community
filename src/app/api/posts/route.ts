@@ -3,9 +3,25 @@ import { createPost } from '@/actions/posts';
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const content = formData.get('content') as string;
-    const token = formData.get('token') as string;
+    // 支持 JSON 和 FormData
+    const contentType = request.headers.get('content-type');
+    
+    let content: string;
+    let images: string[] = [];
+    let token: string;
+
+    if (contentType?.includes('application/json')) {
+      const body = await request.json();
+      content = body.content;
+      images = body.images || [];
+      token = request.headers.get('authorization')?.replace('Bearer ', '') || '';
+    } else {
+      const formData = await request.formData();
+      content = formData.get('content') as string;
+      const imagesStr = formData.get('images') as string;
+      images = imagesStr ? JSON.parse(imagesStr) : [];
+      token = formData.get('token') as string;
+    }
 
     if (!content || !token) {
       return NextResponse.json(
@@ -15,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 调用 Server Action
-    const result = await createPost(content, [], token);
+    const result = await createPost(content, images, token);
 
     if (result.success) {
       return NextResponse.json(result);
