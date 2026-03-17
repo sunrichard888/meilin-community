@@ -14,6 +14,25 @@
 - **状态**：✅ 完成
 - **说明**：创建 DEVLOG.md 和任务清单
 
+### 迭代 2：测试基础设施 + 验证逻辑 TDD
+- **开始时间**：2026-03-17 09:40
+- **状态**：✅ 完成
+- **说明**：
+  - 安装 Vitest + Testing Library 测试框架
+  - 创建 vitest.config.ts 和测试设置
+  - 抽取验证逻辑到 `src/lib/validators/neighbor-profile.ts`
+  - TDD 开发：先写 27 个测试用例，再实现验证函数
+  - 所有测试通过 ✅
+
+### 迭代 3：数据库扩展
+- **开始时间**：2026-03-17 09:45
+- **状态**：✅ 完成
+- **说明**：
+  - 创建 `supabase-privacy-settings.sql`
+  - 新增 `user_privacy_settings` 表
+  - 配置 RLS 策略
+  - 添加自动更新触发器
+
 ---
 
 ## 问题追踪
