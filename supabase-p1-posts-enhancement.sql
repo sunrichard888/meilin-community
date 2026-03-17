@@ -35,6 +35,12 @@ CREATE TRIGGER before_insert_post_populate_community
 -- 4. RLS 策略
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 
+-- 先删除现有策略（如果存在）
+DROP POLICY IF EXISTS "Anyone can view posts" ON posts;
+DROP POLICY IF EXISTS "Authenticated users can create posts" ON posts;
+DROP POLICY IF EXISTS "Users can update own posts" ON posts;
+DROP POLICY IF EXISTS "Users can delete own posts" ON posts;
+
 -- 允许所有人查看已发布的帖子
 CREATE POLICY "Anyone can view posts"
   ON posts FOR SELECT

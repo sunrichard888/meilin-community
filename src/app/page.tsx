@@ -5,8 +5,8 @@ import { useAuth } from "@/lib/auth";
 import { usePosts } from "@/lib/hooks";
 import { NavBar } from "@/components/nav-bar";
 import { SideBar } from "@/components/side-bar";
-import { PostComposer } from "@/components/post-composer";
-import { PostCard } from "@/components/post-card";
+import PostComposer from "@/components/post-composer";
+import PostCard from "@/components/post-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { ToastProvider } from "@/components/ui/toast";
@@ -175,7 +175,7 @@ function HomeContent() {
 
             {/* 发布框 */}
             {user && (
-              <PostComposer onAddPost={handleAddPost} userNickname={user.nickname} />
+              <PostComposer />
             )}
 
             {/* 内容分类标签 */}

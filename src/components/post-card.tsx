@@ -1,100 +1,100 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ImageGrid } from "@/components/ui/image-grid";
-import { Post } from "@/lib/types";
+import { PostData } from "@/actions/posts";
+import { formatDistanceToNow } from "date-fns";
+import { zhCN } from "date-fns/locale";
 
 interface PostCardProps {
-  post: Post;
-  onLike: (id: string) => void;
-  isLiked?: boolean;
+  post: PostData;
 }
 
-function formatDate(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "刚刚";
-    if (diffMins < 60) return `${diffMins}分钟前`;
-    if (diffHours < 24) return `${diffHours}小时前`;
-    if (diffDays < 7) return `${diffDays}天前`;
-    return date.toLocaleDateString("zh-CN");
-  } catch {
-    return "未知时间";
-  }
-}
-
-export function PostCard({ post, onLike, isLiked = false }: PostCardProps) {
-  const likesCount = post.likes_count || 0;
-  const commentsCount = post.comments_count || 0;
+function PostCardComponent({ post, onLike, isLiked }: PostCardProps & { onLike?: (id: string) => void; isLiked?: boolean }) {
+  const timeAgo = formatDistanceToNow(new Date(post.created_at), {
+    addSuffix: true,
+    locale: zhCN,
+  });
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-300">
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          <Avatar className="h-12 w-12 ring-2 ring-primary/10">
-            <AvatarFallback className="bg-muted font-medium">
+    <article className="bg-card rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-4">
+        {/* 头像 */}
+        <div className="flex-shrink-0">
+          {post.user?.avatar ? (
+            <img
+              src={post.user.avatar}
+              alt={post.user.nickname}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
               {post.user?.nickname?.[0]?.toUpperCase() || "?"}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold hover:text-primary transition-colors cursor-pointer">
-                {post.user?.nickname || "匿名用户"}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {formatDate(post.created_at)}
-              </span>
             </div>
-            <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap break-words">
-              {post.content}
-            </p>
-            {post.images && post.images.length > 0 && (
-              <ImageGrid images={post.images} alt={`${post.user?.nickname} 分享的图片`} />
+          )}
+        </div>
+
+        {/* 内容 */}
+        <div className="flex-1 min-w-0">
+          {/* 头部信息 */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-semibold">
+              {post.user?.nickname || "匿名用户"}
+            </span>
+            {post.community_name && (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <span className="text-sm text-muted-foreground">
+                  {post.community_name}
+                  {post.building_number && ` ${post.building_number}`}
+                </span>
+              </>
             )}
-            <div className="flex items-center gap-1 mt-3 pt-3 border-t">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onLike(post.id)}
-                className={
-                  isLiked
-                    ? "bg-primary/10 text-primary hover:bg-primary/20"
-                    : "hover:bg-primary/10 hover:text-primary"
-                }
-                aria-label={`点赞，当前${likesCount}个赞`}
-              >
-                <span aria-hidden="true">👍</span>
-                <span className="ml-1">{likesCount}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="hover:bg-accent/10 hover:text-accent"
-                aria-label={`${commentsCount} 条评论`}
-              >
-                <span aria-hidden="true">💬</span>
-                <span className="ml-1">{commentsCount}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="ml-auto hover:bg-secondary/10"
-                aria-label="分享"
-              >
-                <span aria-hidden="true">🔗</span>
-              </Button>
+            {post.is_pinned && (
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                置顶
+              </span>
+            )}
+          </div>
+
+          {/* 帖子内容 */}
+          <div className="text-base leading-relaxed whitespace-pre-wrap mb-3">
+            {post.content}
+          </div>
+
+          {/* 图片（如果有） */}
+          {post.images && post.images.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+              {post.images.map((img, index) => (
+                <img
+                  key={index}
+                  src={img}
+                  alt={`图片 ${index + 1}`}
+                  className="rounded-lg aspect-square object-cover hover:opacity-90 transition-opacity"
+                />
+              ))}
+            </div>
+          )}
+
+          {/* 底部信息 */}
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <time dateTime={post.created_at}>{timeAgo}</time>
+            
+            {/* 互动数据 */}
+            <div className="flex items-center gap-4">
+              <button className="flex items-center gap-1 hover:text-primary transition-colors">
+                <span>❤️</span>
+                <span>{post.likes_count}</span>
+              </button>
+              <button className="flex items-center gap-1 hover:text-primary transition-colors">
+                <span>💬</span>
+                <span>{post.comments_count}</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
-    </Card>
+    </article>
   );
 }
+
+export default PostCardComponent;
+export { PostCardComponent as PostCard };

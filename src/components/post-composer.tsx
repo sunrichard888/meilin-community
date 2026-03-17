@@ -1,94 +1,129 @@
 "use client";
 
 import { useState } from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { createPost } from "@/actions/posts";
+import { useAuth } from "@/lib/auth";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
+import { ToastProvider } from "@/components/ui/toast";
 
-interface PostComposerProps {
-  onAddPost: (content: string) => void;
-  userNickname?: string;
-}
-
-export function PostComposer({ onAddPost, userNickname }: PostComposerProps) {
+function PostComposerContent() {
+  const { getToken } = useAuth();
+  const { showToast } = useToast();
   const [content, setContent] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [charCount, setCharCount] = useState(0);
 
-  const handleSubmit = async () => {
-    if (!content.trim()) return;
-    setIsSubmitting(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!content.trim()) {
+      showToast("内容不能为空", "error");
+      return;
+    }
+
+    if (content.length > 1000) {
+      showToast("内容不能超过 1000 字", "error");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      await onAddPost(content);
-      setContent("");
+      const token = await getToken();
+      if (!token) {
+        showToast("请先登录", "error");
+        return;
+      }
+      const result = await createPost(content, [], token);
+
+      if (result.success) {
+        showToast("发布成功！", "success");
+        setContent("");
+        setCharCount(0);
+        
+        // 刷新页面显示新帖子
+        window.location.reload();
+      } else {
+        showToast(result.error || "发布失败", "error");
+      }
+    } catch (error: any) {
+      showToast(error.message || "发布失败", "error");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && e.ctrlKey) {
-      handleSubmit();
+    // Ctrl+Enter 或 Cmd+Enter 快速发布
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit(e);
     }
   };
 
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setContent(value);
+    setCharCount(value.length);
+  };
+
   return (
-    <Card className="mb-6 p-0 overflow-hidden">
-      <div className="p-4 border-b">
-        <div className="flex gap-3">
-          <Avatar className="h-10 w-10 ring-2 ring-primary/20 flex-shrink-0">
-            <AvatarFallback className="bg-primary/10 text-primary font-medium">
-              {userNickname?.[0]?.toUpperCase() || "?"}
-            </AvatarFallback>
-          </Avatar>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="flex-1 resize-none border-0 bg-muted/30 rounded-xl p-3 text-base focus:bg-background focus-visible:ring-2 focus-visible:ring-primary/20 transition-colors"
-            placeholder="分享邻里趣事、求助信息、好物推荐... (Ctrl+Enter 发布)"
-            rows={2}
-            disabled={isSubmitting}
-          />
-        </div>
-      </div>
-      <div className="flex items-center justify-between p-3 bg-muted/30">
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 hover:bg-primary/10 hover:text-primary"
-            aria-label="添加图片"
-            disabled={isSubmitting}
-          >
-            <span aria-hidden="true">🖼️</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 hover:bg-primary/10 hover:text-primary"
-            aria-label="添加位置"
-            disabled={isSubmitting}
-          >
-            <span aria-hidden="true">📍</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 hover:bg-primary/10 hover:text-primary"
-            aria-label="添加话题"
-            disabled={isSubmitting}
-          >
-            <span aria-hidden="true">#</span>
-          </Button>
-        </div>
-        <Button
-          onClick={handleSubmit}
-          disabled={!content.trim() || isSubmitting}
-          className="rounded-full px-6"
-        >
-          {isSubmitting ? "发布中..." : "发布"}
-        </Button>
-      </div>
+    <Card>
+      <CardContent className="pt-6">
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            {/* 输入框 */}
+            <Textarea
+              value={content}
+              onChange={handleTextChange}
+              onKeyDown={handleKeyDown}
+              placeholder="分享你的想法... (Ctrl+Enter 发布)"
+              className="min-h-[120px] resize-y"
+              maxLength={1000}
+            />
+
+            {/* 字符计数 */}
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>支持 emoji 😊</span>
+              <span className={charCount > 900 ? "text-destructive" : ""}>
+                {charCount}/1000
+              </span>
+            </div>
+
+            {/* 图片上传占位 */}
+            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                📷 图片上传功能开发中（P2 实现）
+              </p>
+            </div>
+
+            {/* 发布按钮 */}
+            <div className="flex justify-end">
+              <Button 
+                type="submit" 
+                disabled={loading || !content.trim()}
+                className="w-full sm:w-auto"
+              >
+                {loading ? "发布中..." : "发布"}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </CardContent>
     </Card>
   );
 }
+
+export default function PostComposer() {
+  return (
+    <ToastProvider>
+      <PostComposerContent />
+    </ToastProvider>
+  );
+}
+
+// 兼容旧代码的命名导出（P2 移除）
+export { PostComposerContent as PostComposer };
