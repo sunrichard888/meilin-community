@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // 从请求头获取 Authorization
     const authHeader = request.headers.get('authorization');
     
     if (!authHeader) {
@@ -16,13 +15,16 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '');
+    console.log('[GET Privacy Settings] Token:', token ? 'present' : 'missing');
     
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      console.error('Auth error:', authError);
+      console.error('[GET Privacy Settings] Auth error:', authError);
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
+
+    console.log('[GET Privacy Settings] User ID:', user.id);
 
     const { data, error } = await supabase
       .from('user_privacy_settings')
@@ -31,6 +33,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (error && error.code !== 'PGRST116') {
+      console.error('[GET Privacy Settings] DB error:', error);
       throw error;
     }
 
@@ -56,9 +59,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
-    console.error('Error fetching privacy settings:', error);
+    console.error('[GET Privacy Settings] Error:', error);
     return NextResponse.json(
-      { error: error.message || '获取失败' },
+      { error: error.message || '获取失败', details: error.toString() },
       { status: 500 }
     );
   }
@@ -71,22 +74,28 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // 从请求头获取 Authorization
     const authHeader = request.headers.get('authorization');
     
     if (!authHeader) {
+      console.error('[POST Privacy Settings] No auth header');
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
 
     const token = authHeader.replace('Bearer ', '');
+    console.log('[POST Privacy Settings] Token:', token ? 'present' : 'missing');
+    
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      console.error('Auth error:', authError);
+      console.error('[POST Privacy Settings] Auth error:', authError);
       return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
 
+    console.log('[POST Privacy Settings] User ID:', user.id);
+
     const body = await request.json();
+    console.log('[POST Privacy Settings] Body:', JSON.stringify(body, null, 2));
+
     const {
       show_community_name,
       show_building_info,
@@ -106,15 +115,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '无效的隐私预设' }, { status: 400 });
     }
 
-    const { data: existing } = await supabase
+    // 检查是否已存在
+    const { data: existing, error: existingError } = await supabase
       .from('user_privacy_settings')
       .select('id')
       .eq('user_id', user.id)
       .single();
 
+    if (existingError && existingError.code !== 'PGRST116') {
+      console.error('[POST Privacy Settings] Check existing error:', existingError);
+    }
+
     let result;
     
     if (existing) {
+      console.log('[POST Privacy Settings] Updating existing record:', existing.id);
       const { data, error } = await supabase
         .from('user_privacy_settings')
         .update({
@@ -135,9 +150,13 @@ export async function POST(request: NextRequest) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[POST Privacy Settings] Update error:', error);
+        throw error;
+      }
       result = data;
     } else {
+      console.log('[POST Privacy Settings] Inserting new record');
       const { data, error } = await supabase
         .from('user_privacy_settings')
         .insert({
@@ -158,15 +177,24 @@ export async function POST(request: NextRequest) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[POST Privacy Settings] Insert error:', error);
+        console.error('[POST Privacy Settings] Insert error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        throw error;
+      }
       result = data;
     }
 
     return NextResponse.json({ success: true, data: result });
   } catch (error: any) {
-    console.error('Error saving privacy settings:', error);
+    console.error('[POST Privacy Settings] Error:', error);
     return NextResponse.json(
-      { error: error.message || '保存失败' },
+      { error: error.message || '保存失败', details: error.toString() },
       { status: 500 }
     );
   }
