@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { createPost } from "@/actions/posts";
+import { useRef, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { ToastProvider } from "@/components/ui/toast";
 function PostComposerContent() {
   const { getToken } = useAuth();
   const { showToast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [charCount, setCharCount] = useState(0);
@@ -35,11 +35,23 @@ function PostComposerContent() {
       const token = await getToken();
       if (!token) {
         showToast("请先登录", "error");
+        setLoading(false);
         return;
       }
-      const result = await createPost(content, [], token);
 
-      if (result.success) {
+      // 使用 FormData 提交到 API
+      const formData = new FormData();
+      formData.append('content', content);
+      formData.append('token', token);
+
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         showToast("发布成功！", "success");
         setContent("");
         setCharCount(0);
