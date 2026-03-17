@@ -92,31 +92,38 @@ function PostComposerContent() {
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
-            {/* 输入框和表情选择器 */}
-            <div className="relative">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">😊 支持表情符号</span>
-                <EmojiPicker onSelect={handleEmojiSelect} />
-              </div>
-              <Textarea
-                value={content}
-                onChange={handleTextChange}
-                onKeyDown={handleKeyDown}
-                placeholder="分享你的想法... (Ctrl+Enter 发布)"
-                className="min-h-[120px] resize-y"
-                maxLength={1000}
-              />
-            </div>
+            {/* 输入框 */}
+            <Textarea
+              value={content}
+              onChange={handleTextChange}
+              onKeyDown={handleKeyDown}
+              placeholder="分享你的想法... (Ctrl+Enter 发布)"
+              className="min-h-[120px] resize-y"
+              maxLength={1000}
+            />
 
-            {/* 字符计数 */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span></span>
-              <span className={charCount > 900 ? "text-destructive" : ""}>
+            {/* 控制栏：表情 + 图片 + 字符计数 */}
+            <div className="flex items-center justify-between gap-2 pt-2 border-t">
+              {/* 左侧：表情和图片控制 */}
+              <div className="flex items-center gap-1">
+                <EmojiPicker onSelect={handleEmojiSelect} />
+                <button
+                  type="button"
+                  disabled
+                  className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="图片上传（开发中）"
+                >
+                  📷
+                </button>
+              </div>
+
+              {/* 右侧：字符计数 */}
+              <span className={`text-sm ${charCount > 900 ? "text-destructive" : "text-muted-foreground"}`}>
                 {charCount}/1000
               </span>
             </div>
 
-            {/* 图片上传占位 */}
+            {/* 图片上传占位提示 */}
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
               <p className="text-sm text-muted-foreground">
                 📷 图片上传功能开发中（P2 实现）
