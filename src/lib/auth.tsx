@@ -19,6 +19,7 @@ export type AuthContextType = {
   signUp: (email: string, password: string, nickname: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: string | null }>;
+  getToken: () => Promise<string | null>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -164,8 +165,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function getToken(): Promise<string | null> {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token || null;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, changePassword }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, changePassword, getToken }}>
       {children}
     </AuthContext.Provider>
   );

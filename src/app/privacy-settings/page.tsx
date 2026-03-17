@@ -42,7 +42,7 @@ const DEFAULT_SETTINGS: PrivacyFormData = {
 
 function PrivacySettingsForm() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut, getToken } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -62,8 +62,11 @@ function PrivacySettingsForm() {
 
   async function fetchSettings() {
     try {
+      const token = await getToken();
       const response = await fetch("/api/privacy-settings", {
-        credentials: 'include',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
       });
       const data = await response.json();
 
@@ -137,10 +140,13 @@ function PrivacySettingsForm() {
     setLoading(true);
 
     try {
+      const token = await getToken();
       const response = await fetch("/api/privacy-settings", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: 'include',
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
         body: JSON.stringify({
           show_community_name: formData.showCommunityName,
           show_building_info: formData.showBuildingInfo,
