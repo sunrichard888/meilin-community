@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
+import NotificationBell from "@/components/notification-bell";
 
 interface NavBarProps {
   user?: {
@@ -87,18 +88,10 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
                 ✏️ 发布
               </Button>
 
-              {/* 通知图标 */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative hidden sm:inline-flex"
-                aria-label="通知"
-              >
-                🔔
-                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
-                  3
-                </span>
-              </Button>
+              {/* 通知铃铛 */}
+              <div className="hidden sm:block">
+                <NotificationBell />
+              </div>
 
               {/* 用户头像 + 下拉菜单 */}
               <div className="relative">
@@ -237,6 +230,10 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
             </Link>
             {user ? (
               <>
+                {/* 移动端通知铃铛 */}
+                <div className="px-4 py-2">
+                  <NotificationBell />
+                </div>
                 <Link
                   href={userId ? `/users/${userId}` : '/login'}
                   className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
