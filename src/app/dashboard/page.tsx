@@ -26,7 +26,7 @@ function SettingSection({ title, description, children }: { title: string; descr
 
 // 头像上传组件
 function AvatarEditor({ user }: { user: any }) {
-  const { updateUserProfile } = useAuth();
+  const { updateUserProfile, getToken } = useAuth();
   const { showToast } = useToast();
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
