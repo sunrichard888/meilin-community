@@ -47,7 +47,7 @@ function HotTopicsContent() {
               {topics.map((topic) => (
                 <div
                   key={topic.id}
-                  className="p-4 rounded-lg border hover:shadow-md transition-shadow cursor-pointer"
+                  className="p-4 rounded-lg border hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold">{topic.name}</h3>

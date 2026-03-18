@@ -107,7 +107,8 @@ function StatsContent() {
                 {topCommunities.map((community) => (
                   <div
                     key={community.rank}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                    onClick={() => alert(`即将跳转到 ${community.name} 的小区页面（开发中）`)}
                   >
                     <div className="flex items-center gap-3">
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -136,7 +137,8 @@ function StatsContent() {
                 {topUsers.map((user) => (
                   <div
                     key={user.rank}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                    onClick={() => alert(`即将跳转到 ${user.name} 的个人主页（开发中）`)}
                   >
                     <div className="flex items-center gap-3">
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${

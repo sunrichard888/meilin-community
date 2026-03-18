@@ -62,7 +62,10 @@ function AnnouncementsContent() {
           {announcements.map((announcement) => (
             <Card key={announcement.id}>
               <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-3">
+                <div
+                  className="flex items-start justify-between mb-3 cursor-pointer"
+                  onClick={() => setExpandedId(expandedId === announcement.id ? null : announcement.id)}
+                >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       {announcement.isPinned && (
@@ -83,7 +86,10 @@ function AnnouncementsContent() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setExpandedId(expandedId === announcement.id ? null : announcement.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpandedId(expandedId === announcement.id ? null : announcement.id);
+                    }}
                   >
                     {expandedId === announcement.id ? '收起' : '展开'}
                   </Button>
