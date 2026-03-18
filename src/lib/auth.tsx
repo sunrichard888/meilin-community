@@ -19,6 +19,7 @@ export type AuthContextType = {
   signUp: (email: string, password: string, nickname: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: string | null }>;
+  updateUserProfile: (fields: { nickname?: string; avatar?: string }) => Promise<{ error: string | null }>;
   getToken: () => Promise<string | null>;
 };
 
@@ -165,13 +166,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  async function updateUserProfile(fields: { nickname?: string; avatar?: string }) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { error: '用户未登录' };
+      }
+
+      // 更新 users 表
+      const { error } = await supabase
+        .from('users')
+        .update(fields)
+        .eq('id', user.id);
+
+      if (error) {
+        return { error: error.message || '更新失败' };
+      }
+
+      // 重新加载用户信息
+      await loadUser(user.id);
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message || '更新失败' };
+    }
+  }
+
   async function getToken(): Promise<string | null> {
     const { data } = await supabase.auth.getSession();
     return data.session?.access_token || null;
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, changePassword, getToken }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, changePassword, updateUserProfile, getToken }}>
       {children}
     </AuthContext.Provider>
   );

@@ -26,22 +26,101 @@ function SettingSection({ title, description, children }: { title: string; descr
 
 // 头像上传组件
 function AvatarEditor({ user }: { user: any }) {
+  const { updateUserProfile } = useAuth();
+  const { showToast } = useToast();
   const [preview, setPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useState<HTMLInputElement | null>(null);
+
+  const handleSelectFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      showToast('请选择图片文件', 'error');
+      return;
+    }
+
+    // 验证文件大小（2MB）
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('图片大小不能超过 2MB', 'error');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // 读取文件为 DataURL
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const dataUrl = event.target?.result as string;
+        setPreview(dataUrl);
+
+        // 调用 API 上传头像
+        const token = await getToken();
+        const response = await fetch('/api/avatar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+          },
+          body: JSON.stringify({
+            avatar: dataUrl,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          showToast('头像更新成功', 'success');
+          // 刷新用户信息
+          await updateUserProfile!({ avatar: result.avatarUrl });
+        } else {
+          showToast(result.error || '上传失败', 'error');
+          setPreview(null);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error: any) {
+      showToast(error.message || '上传失败', 'error');
+      setPreview(null);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="flex items-center gap-4">
+      <input
+        ref={fileInputRef as any}
+        type="file"
+        accept="image/*"
+        onChange={handleSelectFile}
+        className="hidden"
+        disabled={uploading}
+      />
       <Avatar className="h-20 w-20">
-        <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
-          {preview ? (
-            <img src={preview} alt="头像预览" className="h-full w-full object-cover" />
+        <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold overflow-hidden">
+          {preview || user?.avatar ? (
+            <img 
+              src={preview || user?.avatar} 
+              alt="头像" 
+              className="h-full w-full object-cover" 
+            />
           ) : (
             user?.nickname?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "?"
           )}
         </AvatarFallback>
       </Avatar>
       <div className="space-y-2">
-        <Button variant="outline" size="sm">
-          更换头像
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => (fileInputRef[0] as any)?.click()}
+          disabled={uploading}
+        >
+          {uploading ? '上传中...' : '更换头像'}
         </Button>
         <p className="text-xs text-muted-foreground">
           支持 JPG、PNG 格式，最大 2MB
@@ -128,6 +207,64 @@ function ChangePassword({ user }: { user: any }) {
   );
 }
 
+// 昵称修改组件
+function NicknameEditor({ user }: { user: any }) {
+  const { updateUserProfile } = useAuth();
+  const { showToast } = useToast();
+  const [nickname, setNickname] = useState(user?.nickname || "");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!nickname.trim()) {
+      showToast('昵称不能为空', 'error');
+      return;
+    }
+
+    if (nickname.length > 20) {
+      showToast('昵称不能超过 20 个字符', 'error');
+      return;
+    }
+
+    setLoading(true);
+    
+    const { error } = await updateUserProfile!({ nickname: nickname.trim() });
+    
+    if (error) {
+      showToast(error, 'error');
+    } else {
+      showToast('昵称修改成功', 'success');
+    }
+    
+    setLoading(false);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid gap-2">
+        <Label htmlFor="nickname">昵称</Label>
+        <div className="flex gap-2">
+          <Input
+            id="nickname"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            placeholder="输入昵称"
+            className="flex-1"
+            maxLength={20}
+          />
+          <Button type="submit" disabled={loading || !nickname.trim()}>
+            {loading ? '保存中...' : '保存'}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          昵称最多 20 个字符，将显示在帖子和个人主页
+        </p>
+      </div>
+    </form>
+  );
+}
+
 // 账号信息组件
 function AccountInfo({ user }: { user: any }) {
   return (
@@ -143,8 +280,8 @@ function AccountInfo({ user }: { user: any }) {
         <Label>手机号</Label>
         <div className="flex gap-2">
           <Input value="未绑定" disabled className="flex-1" />
-          <Button variant="outline" size="sm">
-            绑定手机
+          <Button variant="outline" size="sm" disabled>
+            开发中
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
@@ -240,6 +377,19 @@ function DashboardContent() {
                   </CardHeader>
                   <CardContent>
                     <AvatarEditor user={user} />
+                  </CardContent>
+                </Card>
+
+                {/* 昵称修改 */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>昵称</CardTitle>
+                    <CardDescription>
+                      修改你的显示昵称
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <NicknameEditor user={user} />
                   </CardContent>
                 </Card>
 
