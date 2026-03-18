@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 
 interface NavBarProps {
   user?: {
+    id?: string;
     nickname?: string;
     email?: string;
     avatar?: string;
@@ -18,6 +19,9 @@ interface NavBarProps {
 export function NavBar({ user, onSignOut }: NavBarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  
+  // 获取用户 ID（从 user 对象或 auth）
+  const userId = user && 'id' in user ? user.id : null;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -128,6 +132,13 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
                       </div>
                       <div className="py-2">
                         <Link 
+                          href={userId ? `/users/${userId}` : '/login'} 
+                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          👤 个人主页
+                        </Link>
+                        <Link 
                           href="/dashboard" 
                           className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
                           onClick={() => setUserMenuOpen(false)}
@@ -226,6 +237,13 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
             </Link>
             {user ? (
               <>
+                <Link
+                  href={userId ? `/users/${userId}` : '/login'}
+                  className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  👤 个人主页
+                </Link>
                 <Link
                   href="/messages"
                   className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { PostData } from "@/actions/posts";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -37,29 +38,32 @@ function PostCardComponent({ post, userToken, onLike, isLiked }: PostCardProps &
     <article className="bg-card rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start gap-4">
         {/* 头像 */}
-        <div className="flex-shrink-0">
+        <Link href={`/users/${post.user_id}`} className="flex-shrink-0">
           {post.user?.avatar ? (
             <img
               src={post.user.avatar}
               alt={post.user.nickname}
-              className="w-12 h-12 rounded-full object-cover"
+              className="w-12 h-12 rounded-full object-cover hover:opacity-80 transition-opacity"
               loading="lazy"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold hover:opacity-80 transition-opacity">
               {post.user?.nickname?.[0]?.toUpperCase() || "?"}
             </div>
           )}
-        </div>
+        </Link>
 
         {/* 内容 */}
         <div className="flex-1 min-w-0">
           {/* 头部信息 */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="font-semibold">
+              <Link 
+                href={`/users/${post.user_id}`}
+                className="font-semibold hover:text-primary transition-colors"
+              >
                 {post.user?.nickname || "匿名用户"}
-              </span>
+              </Link>
               {post.community_name && (
                 <>
                   <span className="text-muted-foreground">·</span>
