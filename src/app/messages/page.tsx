@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 
 function MessagesContent() {
   // 占位数据
-  const conversations = [];
+  const conversations: any[] = [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
