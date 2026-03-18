@@ -20,6 +20,7 @@ export type AuthContextType = {
   signOut: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: string | null }>;
   updateUserProfile: (fields: { nickname?: string; avatar?: string }) => Promise<{ error: string | null }>;
+  getUserProfile: (userId: string) => Promise<User | null>;
   getToken: () => Promise<string | null>;
 };
 
@@ -197,8 +198,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data.session?.access_token || null;
   }
 
+  async function getUserProfile(userId: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error || !data) {
+        return null;
+      }
+      
+      return data as User;
+    } catch (error) {
+      console.error('getUserProfile error:', error);
+      return null;
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, changePassword, updateUserProfile, getToken }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, changePassword, updateUserProfile, getUserProfile, getToken }}>
       {children}
     </AuthContext.Provider>
   );
