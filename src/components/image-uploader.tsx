@@ -177,57 +177,50 @@ export default function ImageUploader({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="flex items-center gap-2">
       {/* 选择图片按钮 */}
-      <div className="flex items-center gap-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleSelectFiles}
-          className="hidden"
-          disabled={uploading || images.length >= maxImages}
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading || images.length >= maxImages}
-          className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="选择图片"
-        >
-          📷
-        </button>
-        <span className="text-xs text-muted-foreground">
-          {images.length}/{maxImages} 张
-        </span>
-      </div>
-
-      {/* 图片预览 */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleSelectFiles}
+        className="hidden"
+        disabled={uploading || images.length >= maxImages}
+      />
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading || images.length >= maxImages}
+        className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title="选择图片"
+      >
+        📷
+      </button>
+      
+      {/* 图片计数 */}
       {images.length > 0 && (
-        <div className="grid grid-cols-4 gap-2">
+        <span className="text-xs text-muted-foreground">
+          {images.length}/{maxImages}
+        </span>
+      )}
+
+      {/* 图片预览（小缩略图） */}
+      {images.length > 0 && (
+        <div className="flex items-center gap-1">
           {images.map((image, index) => (
-            <div key={index} className="relative aspect-square">
+            <div key={index} className="relative w-10 h-10">
               <img
                 src={image.preview}
                 alt={`预览 ${index + 1}`}
-                className="w-full h-full object-cover rounded-lg"
+                className="w-full h-full object-cover rounded"
               />
               
-              {/* 上传进度 */}
-              {image.progress < 100 && (
-                <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                  <div className="text-white text-xs">
-                    {image.progress}%
-                  </div>
-                </div>
-              )}
-
               {/* 删除按钮 */}
               <button
                 type="button"
                 onClick={() => handleRemoveImage(index)}
-                className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors text-xs"
                 title="删除"
               >
                 ✕
@@ -237,22 +230,17 @@ export default function ImageUploader({
         </div>
       )}
 
-      {/* 上传按钮 */}
+      {/* 上传按钮（仅在有未上传图片时显示） */}
       {images.some(img => !img.url) && (
         <button
           type="button"
           onClick={handleUpload}
           disabled={uploading}
-          className="w-full py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity disabled:opacity-50"
         >
-          {uploading ? '上传中...' : `上传 ${images.length} 张图片`}
+          {uploading ? '上传中...' : `上传 (${images.length})`}
         </button>
       )}
-
-      {/* 提示信息 */}
-      <p className="text-xs text-muted-foreground">
-        支持 JPG/PNG/GIF 格式，单张≤2MB，自动压缩优化
-      </p>
     </div>
   );
 }

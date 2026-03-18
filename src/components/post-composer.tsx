@@ -120,6 +120,7 @@ function PostComposerContent() {
               {/* 左侧：表情和图片控制 */}
               <div className="flex items-center gap-1">
                 <EmojiPicker onSelect={handleEmojiSelect} />
+                <ImageUploader onImagesChange={handleImagesChange} maxImages={3} maxSizeMB={2} />
               </div>
 
               {/* 右侧：字符计数 */}
@@ -127,9 +128,6 @@ function PostComposerContent() {
                 {charCount}/1000
               </span>
             </div>
-
-            {/* 图片上传组件 */}
-            <ImageUploader onImagesChange={handleImagesChange} maxImages={3} maxSizeMB={2} />
 
             {/* 发布按钮 */}
             <div className="flex justify-end">
