@@ -101,33 +101,13 @@ $$ LANGUAGE plpgsql;
 -- SELECT cron.schedule('cleanup-notifications', '0 2 * * *', 'SELECT cleanup_old_notifications()');
 
 -- ============================================
--- 4. 通知计数优化（添加未读计数物化视图）
+-- 4. 通知计数优化（使用简单查询，不用物化视图）
 -- ============================================
-DROP MATERIALIZED VIEW IF EXISTS user_unread_counts;
+-- 物化视图在触发器中刷新有问题，改用直接查询方式
+-- 性能优化可以通过添加索引实现
 
-CREATE MATERIALIZED VIEW user_unread_counts AS
-SELECT 
-  user_id,
-  COUNT(*) as unread_count
-FROM notifications
-WHERE read = FALSE
-GROUP BY user_id;
-
-CREATE UNIQUE INDEX ON user_unread_counts(user_id);
-
--- 刷新物化视图的函数
-CREATE OR REPLACE FUNCTION refresh_unread_counts()
-RETURNS TRIGGER AS $$
-BEGIN
-  REFRESH MATERIALIZED VIEW CONCURRENTLY user_unread_counts;
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
--- 触发器：通知变化时刷新物化视图
-CREATE TRIGGER refresh_unread_on_notification_change
-AFTER INSERT OR UPDATE OR DELETE ON notifications
-FOR EACH STATEMENT EXECUTE FUNCTION refresh_unread_counts();
+-- 确保未读状态索引存在
+CREATE INDEX IF NOT EXISTS notifications_user_read_idx ON notifications(user_id, read);
 
 -- ============================================
 -- 5. 用户已读所有通知的便捷函数
@@ -199,12 +179,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================
--- 7. 初始化现有数据（如果有）
+-- 7. 清理函数（手动调用）
 -- ============================================
--- 为现有用户初始化通知计数
-INSERT INTO user_unread_counts (user_id, unread_count)
-SELECT id, 0 FROM users
-ON CONFLICT (user_id) DO NOTHING;
-
--- 刷新物化视图
-REFRESH MATERIALIZED VIEW user_unread_counts;
+-- 定期清理过期通知（可以通过 cron 或应用层定时调用）
+-- SELECT cleanup_old_notifications();

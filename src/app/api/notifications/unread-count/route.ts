@@ -33,24 +33,10 @@ export async function GET(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 尝试从物化视图获取
-    const { data: viewData } = await supabase
-      .from('user_unread_counts')
-      .select('unread_count')
-      .eq('user_id', user.id)
-      .single();
-
-    if (viewData) {
-      return NextResponse.json({ 
-        success: true, 
-        count: viewData.unread_count 
-      });
-    }
-
-    // 如果物化视图不存在，直接查询
-    const { data, error } = await supabase
+    // 直接查询未读数
+    const { count, error } = await supabase
       .from('notifications')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('read', false);
 
@@ -64,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      count: data ? 0 : 0 
+      count: count || 0 
     });
   } catch (error: any) {
     console.error('[GET /api/notifications/unread-count] Error:', error);
