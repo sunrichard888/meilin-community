@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +30,7 @@ function AvatarEditor({ user }: { user: any }) {
   const { showToast } = useToast();
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useState<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSelectFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -93,7 +93,7 @@ function AvatarEditor({ user }: { user: any }) {
   return (
     <div className="flex items-center gap-4">
       <input
-        ref={fileInputRef as any}
+        ref={fileInputRef}
         type="file"
         accept="image/*"
         onChange={handleSelectFile}
@@ -117,7 +117,7 @@ function AvatarEditor({ user }: { user: any }) {
         <Button 
           variant="outline" 
           size="sm"
-          onClick={() => (fileInputRef[0] as any)?.click()}
+          onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
         >
           {uploading ? '上传中...' : '更换头像'}
