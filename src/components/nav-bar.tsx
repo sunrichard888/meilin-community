@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import NotificationBell from "@/components/notification-bell";
+import SearchBar from "@/components/search-bar";
 
 interface NavBarProps {
   user?: {
@@ -42,41 +43,44 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
             </div>
           </Link>
 
-          {/* 桌面端导航 */}
-          <nav className="hidden md:flex items-center gap-1">
-            <Link
-              href="/"
-              className="px-3 py-2 rounded-lg text-sm font-medium bg-primary/10 text-primary"
-            >
-              🏠 首页
-            </Link>
-            <Link
-              href="/discover"
-              className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              🧭 发现
-            </Link>
-            <Link
-              href="/activities"
-              className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              🎉 活动
-            </Link>
-            <Link
-              href="/market"
-              className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              🏪 集市
-            </Link>
-            {user && (
+          {/* 桌面端导航 + 搜索框 */}
+          <div className="hidden md:flex items-center gap-4 flex-1 max-w-md">
+            <nav className="flex items-center gap-1">
               <Link
-                href="/messages"
+                href="/"
+                className="px-3 py-2 rounded-lg text-sm font-medium bg-primary/10 text-primary"
+              >
+                🏠 首页
+              </Link>
+              <Link
+                href="/discover"
                 className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
-                💬 消息
+                🧭 发现
               </Link>
-            )}
-          </nav>
+              <Link
+                href="/activities"
+                className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                🎉 活动
+              </Link>
+              <Link
+                href="/market"
+                className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                🏪 集市
+              </Link>
+              {user && (
+                <Link
+                  href="/messages"
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  💬 消息
+                </Link>
+              )}
+            </nav>
+            <SearchBar />
+          </div>
         </div>
 
         {/* 右侧：用户操作 */}
@@ -199,87 +203,93 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
       {/* 移动端下拉菜单 */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t bg-background animate-slide-in">
-          <nav className="container py-4 space-y-2">
-            <Link
-              href="/"
-              className="block px-4 py-3 rounded-lg font-medium bg-primary/10 text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              🏠 首页
-            </Link>
-            <Link
-              href="/discover"
-              className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              🧭 发现
-            </Link>
-            <Link
-              href="/activities"
-              className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              🎉 活动
-            </Link>
-            <Link
-              href="/market"
-              className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              🏪 集市
-            </Link>
-            {user ? (
-              <>
-                {/* 移动端通知铃铛 */}
-                <div className="px-4 py-2">
-                  <NotificationBell />
+          <div className="container py-4">
+            {/* 移动端搜索框 */}
+            <div className="mb-4">
+              <SearchBar placeholder="搜索帖子、用户..." />
+            </div>
+            <nav className="space-y-2">
+              <Link
+                href="/"
+                className="block px-4 py-3 rounded-lg font-medium bg-primary/10 text-primary"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                🏠 首页
+              </Link>
+              <Link
+                href="/discover"
+                className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                🧭 发现
+              </Link>
+              <Link
+                href="/activities"
+                className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                🎉 活动
+              </Link>
+              <Link
+                href="/market"
+                className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                🏪 集市
+              </Link>
+              {user ? (
+                <>
+                  {/* 移动端通知铃铛 */}
+                  <div className="px-4 py-2">
+                    <NotificationBell />
+                  </div>
+                  <Link
+                    href={userId ? `/users/${userId}` : '/login'}
+                    className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    👤 个人主页
+                  </Link>
+                  <Link
+                    href="/messages"
+                    className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    💬 消息
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    ⚙️ 个人设置
+                  </Link>
+                  <button
+                    onClick={() => {
+                      onSignOut?.();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-3 rounded-lg font-medium text-destructive hover:bg-destructive/10"
+                  >
+                    退出登录
+                  </button>
+                </>
+              ) : (
+                <div className="flex gap-2 pt-2">
+                  <Link href="/login" className="flex-1">
+                    <button className="w-full px-4 py-3 rounded-lg border font-medium">
+                      登录
+                    </button>
+                  </Link>
+                  <Link href="/register" className="flex-1">
+                    <button className="w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium">
+                      注册
+                    </button>
+                  </Link>
                 </div>
-                <Link
-                  href={userId ? `/users/${userId}` : '/login'}
-                  className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  👤 个人主页
-                </Link>
-                <Link
-                  href="/messages"
-                  className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  💬 消息
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className="block px-4 py-3 rounded-lg font-medium text-muted-foreground hover:bg-muted"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  ⚙️ 个人设置
-                </Link>
-                <button
-                  onClick={() => {
-                    onSignOut?.();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-3 rounded-lg font-medium text-destructive hover:bg-destructive/10"
-                >
-                  退出登录
-                </button>
-              </>
-            ) : (
-              <div className="flex gap-2 pt-2">
-                <Link href="/login" className="flex-1">
-                  <button className="w-full px-4 py-3 rounded-lg border font-medium">
-                    登录
-                  </button>
-                </Link>
-                <Link href="/register" className="flex-1">
-                  <button className="w-full px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium">
-                    注册
-                  </button>
-                </Link>
-              </div>
-            )}
-          </nav>
+              )}
+            </nav>
+          </div>
         </div>
       )}
     </header>
