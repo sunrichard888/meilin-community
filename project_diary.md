@@ -17,8 +17,10 @@
 - ✅ 个人设置（昵称/头像）
 - ✅ 邻里认证（小区/楼栋/单元/房号）
 - ✅ 隐私设置（可见性/交互权限/通知设置）
-- ✅ 帖子发布（文字 + 表情 + 图片占位）
+- ✅ 帖子发布（文字 + 表情 + 图片）
 - ✅ 帖子列表（真实数据 + 小区过滤）
+- ✅ **评论功能**（评论列表/发布/删除）
+- ✅ **点赞功能**（点赞/取消/实时计数）
 - 🔄 举报功能（待部署）
 - 🔄 Rate Limiting（待部署）
 
@@ -117,6 +119,17 @@
 **解决**: 配置 Git 超时 + 手动推送  
 **结果**: ⚠️ 需要手动推送
 
+### 问题 7: AvatarEditor 中 useRef 使用错误
+**时间**: 2026-03-18 10:33  
+**错误**: 点击"更换头像"按钮无响应  
+**原因**: 使用 `useState` 存储 ref 而非 `useRef`  
+**解决**: 改用 `useRef` hook  
+**结果**: ✅ 头像上传功能正常
+
+---
+
+## 📅 P2 开发进度（2026-03-18）
+
 ---
 
 ## 📁 数据库表结构
@@ -201,12 +214,11 @@ CREATE TABLE reports (
 - 🔄 Rate Limiting（需执行 SQL）
 - 🔄 管理员后台（/admin/reports）
 
-### 待开发功能（P2）
-- 🔄 图片上传（接入腾讯云 COS）
-- 🔄 评论功能
-- 🔄 点赞功能
+### 待开发功能（P2 剩余）
 - 🔄 用户关注
 - 🔄 消息通知
+- 🔄 个人主页
+- 🔄 搜索功能
 
 ### 待优化项
 - 🔄 补充 E2E 测试
@@ -294,16 +306,124 @@ fetch('/api/posts', { method: 'POST', body: formData });
 
 ---
 
-**最后更新**: 2026-03-18 09:55  
+**最后更新**: 2026-03-18 11:10  
 **P1 完成度**: 100% ✅  
-**P2 进度**: 图片上传功能完成  
-**下次更新**: 待评论/点赞功能完成后
+**P2 进度**: 图片上传 + 评论 + 点赞功能完成 ✅  
+**下次更新**: 待用户关注/消息通知功能完成后
 
 ---
 
 ## 📅 P2 开发进度（2026-03-18）
 
 ### P2-1: 图片上传功能（✅ 完成）
+
+#### 实现内容
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| Supabase Storage | ✅ 完成 | 创建 post-images bucket |
+| 图片上传组件 | ✅ 完成 | 支持多选/预览/删除 |
+| 图片压缩 | ✅ 完成 | 自动压缩到 1920px + 80% 质量 |
+| 上传进度 | ✅ 完成 | 实时显示上传百分比 |
+| 限制控制 | ✅ 完成 | 最多 3 张，单张≤2MB |
+
+#### 数据库变更
+```sql
+-- 创建 Storage Bucket
+Storage: post-images
+路径格式：{user_id}/{timestamp}-{random}.jpg
+公开访问：enabled
+```
+
+#### 遇到的问题
+| 问题 | 解决方案 |
+|------|----------|
+| 图片大小超限 | 前端压缩 + 后端验证 |
+| 上传失败无提示 | 添加 try-catch + toast 提示 |
+| 文件名冲突 | 时间戳 + 随机字符串 |
+
+#### 最新提交
+- `c0639bc` - feat: 图片控件图标优化 + 帖子图片点击放大
+- `d69431c` - fix: 图片控件与表情控件水平布局
+- `7cde60a` - feat(P2): 实现图片上传功能（Supabase Storage）
+
+### UI/UX 优化（✅ 完成）
+
+#### 图片控件布局优化
+- **问题**: 图片控件和表情控件上下布局，占用空间大
+- **解决**: 改为水平布局，同一行显示
+- **效果**: 更紧凑，与表情控件对齐
+
+#### 图片图标优化
+- **变更前**: 📷 相机图标
+- **变更后**: 🖼️ 图片图标（更符合图片上传场景）
+
+#### 图片点击放大功能
+- **新增组件**: `image-lightbox.tsx`
+- **功能**:
+  - 点击帖子图片全屏查看
+  - ESC 键或点击背景关闭
+  - 加载动画
+  - 图片自适应屏幕
+  - 键盘导航支持
+
+### P2-2: 评论和点赞功能（✅ 完成）
+
+#### 实现内容
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| 评论 API | ✅ 完成 | GET/POST/DELETE |
+| 评论组件 | ✅ 完成 | 列表/发布/删除 |
+| 点赞 API | ✅ 完成 | POST 切换状态 |
+| 点赞组件 | ✅ 完成 | 实时状态同步 |
+| 数据库触发器 | ✅ 已有 | 自动更新计数 |
+
+#### 技术实现
+**评论功能**:
+- Server Actions: `getComments`, `createComment`, `deleteComment`
+- API 路由：`/api/comments`
+- 组件：`CommentsSection`
+- 支持 500 字限制
+- 仅作者可删除评论
+
+**点赞功能**:
+- Server Actions: `toggleLike`（已存在）
+- API 路由：`/api/likes`
+- 组件：`LikeButton`
+- 实时状态同步
+- 防止重复点赞（数据库唯一约束）
+
+#### 数据库结构
+```sql
+-- comments 表
+CREATE TABLE comments (
+  id UUID PRIMARY KEY,
+  post_id UUID REFERENCES posts(id),
+  user_id UUID REFERENCES users(id),
+  content TEXT NOT NULL,
+  created_at TIMESTAMP
+);
+
+-- likes 表
+CREATE TABLE likes (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  post_id UUID REFERENCES posts(id),
+  created_at TIMESTAMP,
+  UNIQUE(user_id, post_id)  -- 防止重复点赞
+);
+
+-- 触发器：自动更新计数
+CREATE TRIGGER posts_comments_count_trigger 
+  AFTER INSERT OR DELETE ON comments
+  FOR EACH ROW EXECUTE FUNCTION update_post_comments_count();
+
+CREATE TRIGGER posts_likes_count_trigger 
+  AFTER INSERT OR DELETE ON likes
+  FOR EACH ROW EXECUTE FUNCTION update_post_likes_count();
+```
+
+#### 最新提交
+- `16658b8` - feat: 实现评论和点赞功能
 
 #### 实现内容
 | 功能 | 状态 | 说明 |
@@ -365,6 +485,8 @@ Storage: post-images
 - ✅ 帖子发布（文字 + **表情** + **图片**）
 - ✅ 帖子列表（真实数据 + 小区过滤）
 - ✅ **图片点击放大预览**
+- ✅ **评论功能**（列表/发布/删除）
+- ✅ **点赞功能**（点赞/取消/实时计数）
 - ✅ 数据库表（9 张）
 - ✅ Vercel 自动部署
 
@@ -374,10 +496,10 @@ Storage: post-images
 - 🔄 管理员后台（/admin/reports）
 
 ### 待开发功能（P2 剩余）
-- 🔄 评论功能
-- 🔄 点赞功能
 - 🔄 用户关注
 - 🔄 消息通知
+- 🔄 个人主页
+- 🔄 搜索功能
 
 ### 待优化项
 - 🔄 补充 E2E 测试
@@ -390,14 +512,14 @@ Storage: post-images
 ## 📊 Git 提交历史（最近 10 条）
 
 ```
+16658b8 feat: 实现评论和点赞功能
+cb81fa9 fix: 修复头像上传按钮无响应（改用 useRef）
+ebfa9b9 fix: 修复 AvatarEditor 中 getToken 未定义错误
+c1f1482 feat: 添加昵称修改和头像上传功能
+2c9baa7 fix: 移动端图片显示改为 3 列齐平
 c0639bc feat: 图片控件图标优化 + 帖子图片点击放大
 d69431c fix: 图片控件与表情控件水平布局
 7cde60a feat(P2): 实现图片上传功能（Supabase Storage）
 c8a039a docs: 更新项目日记 + 优化表情控件位置
 328db08 feat: 添加表情选择控件
-7ee747d fix: 移除登录欢迎弹窗 + 优化 emoji 提示
-47d8c75 fix: 修复 Server Actions 调用错误
-52a1396 fix: 重新生成 yarn.lock 移除腾讯镜像引用
-1370706 feat: P1 阶段 3 - 举报功能、Rate Limiting、性能优化和可访问性
-d39a044 feat(P1 阶段 2): 完成 Feed 组件开发
 ```
