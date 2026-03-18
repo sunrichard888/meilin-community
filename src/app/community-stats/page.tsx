@@ -5,12 +5,12 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 
 function StatsContent() {
-  // 占位数据（后续可以从 API 获取）
+  // 与首页侧边栏一致的数据
   const stats = {
-    totalUsers: 1234,
-    totalPosts: 5678,
-    todayActive: 89,
-    totalCommunities: 12,
+    activeUsers: 1234,     // 活跃邻居
+    todayPosts: 56,        // 今日发帖
+    ongoingEvents: 12,     // 正在进行活动
+    verifiedBusinesses: 8, // 认证商家
   };
 
   const topCommunities = [
@@ -48,10 +48,10 @@ function StatsContent() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary mb-2">
-                  {stats.totalUsers.toLocaleString()}
+                  {stats.activeUsers.toLocaleString()}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  👥 总用户数
+                  👥 活跃邻居
                 </div>
               </div>
             </CardContent>
@@ -61,10 +61,10 @@ function StatsContent() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary mb-2">
-                  {stats.totalPosts.toLocaleString()}
+                  {stats.todayPosts}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  📝 总帖子数
+                  📝 今日发帖
                 </div>
               </div>
             </CardContent>
@@ -74,10 +74,10 @@ function StatsContent() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary mb-2">
-                  {stats.todayActive.toLocaleString()}
+                  {stats.ongoingEvents}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  🔥 今日活跃
+                  🎉 正在进行活动
                 </div>
               </div>
             </CardContent>
@@ -87,10 +87,10 @@ function StatsContent() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary mb-2">
-                  {stats.totalCommunities}
+                  {stats.verifiedBusinesses}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  🏘️ 小区数量
+                  🏪 认证商家
                 </div>
               </div>
             </CardContent>
