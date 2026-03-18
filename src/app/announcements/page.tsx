@@ -62,37 +62,48 @@ function AnnouncementsContent() {
           {announcements.map((announcement) => (
             <Card key={announcement.id}>
               <CardContent className="pt-6">
-                <div
-                  className="flex items-start justify-between mb-3 cursor-pointer"
-                  onClick={() => setExpandedId(expandedId === announcement.id ? null : announcement.id)}
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      {announcement.isPinned && (
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                          📌 置顶
-                        </span>
-                      )}
-                      <h2 className="text-lg font-semibold">
-                        {announcement.title}
-                      </h2>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      <span>发布：{announcement.author}</span>
-                      <span className="mx-2">•</span>
-                      <span>时间：{announcement.publishedAt}</span>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setExpandedId(expandedId === announcement.id ? null : announcement.id);
-                    }}
+                <div className="mb-3">
+                  <div
+                    className="flex items-start justify-between cursor-pointer"
+                    onClick={() => setExpandedId(expandedId === announcement.id ? null : announcement.id)}
                   >
-                    {expandedId === announcement.id ? '收起' : '展开'}
-                  </Button>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        {announcement.isPinned && (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                            📌 置顶
+                          </span>
+                        )}
+                        <h2 className="text-lg font-semibold hover:text-primary transition-colors">
+                          {announcement.title}
+                        </h2>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        <span>发布：{announcement.author}</span>
+                        <span className="mx-2">•</span>
+                        <span>时间：{announcement.publishedAt}</span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedId(expandedId === announcement.id ? null : announcement.id);
+                      }}
+                    >
+                      {expandedId === announcement.id ? '收起' : '展开'}
+                    </Button>
+                  </div>
+
+                  {/* 公告内容 */}
+                  {(expandedId === announcement.id || announcement.isPinned) && (
+                    <div className="prose max-w-none pt-4 border-t mt-4">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {announcement.content}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* 公告内容 */}

@@ -105,10 +105,10 @@ function StatsContent() {
               <h2 className="text-lg font-semibold mb-4">🏘️ 热门小区排行</h2>
               <div className="space-y-3">
                 {topCommunities.map((community) => (
-                  <div
+                  <Link
                     key={community.rank}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer"
-                    onClick={() => alert(`即将跳转到 ${community.name} 的小区页面（开发中）`)}
+                    href={`/feed?community=${encodeURIComponent(community.name)}`}
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -123,7 +123,7 @@ function StatsContent() {
                     <span className="text-sm text-muted-foreground">
                       {community.posts} 篇帖子
                     </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>
@@ -135,10 +135,10 @@ function StatsContent() {
               <h2 className="text-lg font-semibold mb-4">👥 活跃用户排行</h2>
               <div className="space-y-3">
                 {topUsers.map((user) => (
-                  <div
+                  <Link
                     key={user.rank}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer"
-                    onClick={() => alert(`即将跳转到 ${user.name} 的个人主页（开发中）`)}
+                    href={`/users/search?name=${encodeURIComponent(user.name)}`}
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -153,7 +153,7 @@ function StatsContent() {
                     <span className="text-sm text-muted-foreground">
                       {user.posts} 篇帖子
                     </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>

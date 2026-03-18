@@ -45,9 +45,10 @@ function HotTopicsContent() {
             <h2 className="text-lg font-semibold mb-4">🔥 热门话题榜</h2>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
               {topics.map((topic) => (
-                <div
+                <Link
                   key={topic.id}
-                  className="p-4 rounded-lg border hover:shadow-md transition-shadow"
+                  href={`/feed?topic=${encodeURIComponent(topic.name)}`}
+                  className="block p-4 rounded-lg border hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold">{topic.name}</h3>
@@ -61,7 +62,7 @@ function HotTopicsContent() {
                     <div>{topic.count} 人参与</div>
                     <div>{topic.posts} 篇帖子</div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </CardContent>
