@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('[GET /api/notifications] Database error:', error);
-      // 如果函数不存在，使用直接查询
+      // 如果函数不存在或类型不匹配，使用直接查询
       const { data: fallbackData, error: fallbackError } = await supabase
         .from('notifications')
         .select(`
@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
         .range(offset, offset + limit - 1);
 
       if (fallbackError) {
+        console.error('[GET /api/notifications] Fallback query error:', fallbackError);
         return NextResponse.json(
           { error: '获取通知失败' },
           { status: 500 }

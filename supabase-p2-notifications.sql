@@ -143,7 +143,7 @@ RETURNS TABLE (
   comment_id UUID,
   content TEXT,
   read BOOLEAN,
-  created_at TIMESTAMP,
+  created_at TIMESTAMPTZ, -- 使用 TIMESTAMPTZ 匹配 notifications 表的类型
   like_count BIGINT -- 聚合的点赞数
 ) AS $$
 BEGIN
