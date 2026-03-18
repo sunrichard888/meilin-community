@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { PostData } from "@/actions/posts";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import ReportButton from "./report-button";
+import ImageLightbox from "./image-lightbox";
 
 interface PostCardProps {
   post: PostData;
@@ -11,6 +13,19 @@ interface PostCardProps {
 }
 
 function PostCardComponent({ post, userToken, onLike, isLiked }: PostCardProps & { onLike?: (id: string) => void; isLiked?: boolean }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState("");
+  const [lightboxAlt, setLightboxAlt] = useState("");
+
+  const openLightbox = (src: string, alt: string) => {
+    setLightboxImage(src);
+    setLightboxAlt(alt);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+  };
   const timeAgo = formatDistanceToNow(new Date(post.created_at), {
     addSuffix: true,
     locale: zhCN,
@@ -80,11 +95,29 @@ function PostCardComponent({ post, userToken, onLike, isLiked }: PostCardProps &
                   key={index}
                   src={img}
                   alt={`图片 ${index + 1}`}
-                  className="rounded-lg aspect-square object-cover hover:opacity-90 transition-opacity"
+                  className="rounded-lg aspect-square object-cover hover:opacity-80 transition-opacity cursor-pointer"
                   loading="lazy"
+                  onClick={() => openLightbox(img, `图片 ${index + 1}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      openLightbox(img, `图片 ${index + 1}`);
+                    }
+                  }}
                 />
               ))}
             </div>
+          )}
+
+          {/* 图片放大预览 */}
+          {lightboxOpen && (
+            <ImageLightbox
+              src={lightboxImage}
+              alt={lightboxAlt}
+              onClose={closeLightbox}
+            />
           )}
 
           {/* 底部信息 */}

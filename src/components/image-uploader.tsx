@@ -195,7 +195,7 @@ export default function ImageUploader({
         className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title="选择图片"
       >
-        📷
+        🖼️
       </button>
       
       {/* 图片计数 */}
