@@ -25,6 +25,7 @@ interface Post {
   images: string[];
   likes_count: number;
   comments_count: number;
+  is_pinned: boolean;
   created_at: string;
   user?: {
     nickname: string;
