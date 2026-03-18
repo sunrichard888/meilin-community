@@ -43,42 +43,44 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
             </div>
           </Link>
 
-          {/* 桌面端导航 + 搜索框 */}
-          <div className="hidden md:flex items-center gap-4 flex-1 max-w-md">
-            <nav className="flex items-center gap-1">
+          {/* 桌面端导航 */}
+          <nav className="hidden lg:flex items-center gap-1">
+            <Link
+              href="/"
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-primary/10 text-primary"
+            >
+              🏠 首页
+            </Link>
+            <Link
+              href="/discover"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              🧭 发现
+            </Link>
+            <Link
+              href="/activities"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              🎉 活动
+            </Link>
+            <Link
+              href="/market"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              🏪 集市
+            </Link>
+            {user && (
               <Link
-                href="/"
-                className="px-3 py-2 rounded-lg text-sm font-medium bg-primary/10 text-primary"
+                href="/messages"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
-                🏠 首页
+                💬 消息
               </Link>
-              <Link
-                href="/discover"
-                className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              >
-                🧭 发现
-              </Link>
-              <Link
-                href="/activities"
-                className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              >
-                🎉 活动
-              </Link>
-              <Link
-                href="/market"
-                className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              >
-                🏪 集市
-              </Link>
-              {user && (
-                <Link
-                  href="/messages"
-                  className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                >
-                  💬 消息
-                </Link>
-              )}
-            </nav>
+            )}
+          </nav>
+
+          {/* 桌面端搜索框（右侧） */}
+          <div className="hidden md:flex items-center flex-1 max-w-md ml-auto">
             <SearchBar />
           </div>
         </div>
