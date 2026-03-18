@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
 
     // 搜索用户
     if (type === 'all' || type === 'users') {
+      // 尝试使用数据库函数，如果不存在则直接查询
       const { data: usersData, error: usersError } = await supabase.rpc('search_users', {
         search_query: q.trim(),
         p_limit: limit,
@@ -66,11 +67,11 @@ export async function GET(request: NextRequest) {
       });
 
       if (usersError) {
-        console.error('[GET /api/search] Users search error:', usersError);
+        console.error('[GET /api/search] Users search error, using fallback:', usersError);
         // 降级处理：直接查询
         const { data: fallbackUsers } = await supabase
           .from('users')
-          .select('*')
+          .select('id, nickname, avatar, created_at, follows_count, followers_count')
           .ilike('nickname', `%${q.trim()}%`)
           .range(offset, offset + limit - 1);
 
