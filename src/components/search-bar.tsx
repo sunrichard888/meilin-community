@@ -70,7 +70,7 @@ export default function SearchBar({ placeholder = "搜索帖子、用户..." }: 
 
   const handleSuggestionClick = (suggestion: SearchSuggestion) => {
     if (suggestion.type === 'post') {
-      router.push(`/feed`);
+      router.push(`/posts/${suggestion.id}`);
     } else if (suggestion.type === 'user') {
       router.push(`/users/${suggestion.id}`);
     }

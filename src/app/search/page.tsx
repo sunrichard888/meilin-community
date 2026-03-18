@@ -209,7 +209,7 @@ function SearchContent() {
                   {results.posts.map((post) => (
                     <Link
                       key={post.id}
-                      href={`/feed`}
+                      href={`/posts/${post.id}`}
                       className="block p-6 bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-start gap-4">
