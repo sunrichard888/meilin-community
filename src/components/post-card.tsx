@@ -89,7 +89,7 @@ function PostCardComponent({ post, userToken, onLike, isLiked }: PostCardProps &
 
           {/* 图片（如果有） */}
           {post.images && post.images.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+            <div className="grid grid-cols-3 gap-2 mb-3">
               {post.images.map((img, index) => (
                 <img
                   key={index}
