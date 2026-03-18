@@ -20,6 +20,24 @@ export interface PostData {
   };
 }
 
+export interface CommentData {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  user?: {
+    nickname: string;
+    avatar?: string;
+  };
+}
+
+export interface CreateCommentResult {
+  success: boolean;
+  data?: CommentData;
+  error?: string;
+}
+
 export interface CreatePostResult {
   success: boolean;
   data?: PostData;
@@ -249,5 +267,155 @@ export async function toggleLike(postId: string, token: string): Promise<{ succe
   } catch (error: any) {
     console.error('[toggleLike] Error:', error);
     return { success: false, error: error.message || '操作失败' };
+  }
+}
+
+/**
+ * 获取帖子评论列表
+ */
+export async function getComments(postId: string): Promise<CommentData[]> {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { data, error } = await supabase
+      .from('comments')
+      .select(`
+        *,
+        user:users (
+          nickname,
+          avatar
+        )
+      `)
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('[getComments] Database error:', error);
+      return [];
+    }
+
+    return data as CommentData[];
+  } catch (error: any) {
+    console.error('[getComments] Error:', error);
+    return [];
+  }
+}
+
+/**
+ * 创建评论
+ */
+export async function createComment(
+  postId: string,
+  content: string,
+  token: string
+): Promise<CreateCommentResult> {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+
+    if (authError || !user) {
+      return { success: false, error: '请先登录' };
+    }
+
+    // 验证内容
+    if (!content || content.trim().length === 0) {
+      return { success: false, error: '评论内容不能为空' };
+    }
+
+    if (content.length > 500) {
+      return { success: false, error: '评论内容不能超过 500 字' };
+    }
+
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({
+        post_id: postId,
+        user_id: user.id,
+        content: content.trim(),
+      })
+      .select(`
+        *,
+        user:users (
+          nickname,
+          avatar
+        )
+      `)
+      .single();
+
+    if (error) {
+      console.error('[createComment] Database error:', error);
+      return { success: false, error: '评论失败，请稍后重试' };
+    }
+
+    revalidatePath('/feed');
+
+    return { 
+      success: true, 
+      data: data as CommentData 
+    };
+  } catch (error: any) {
+    console.error('[createComment] Error:', error);
+    return { success: false, error: error.message || '评论失败' };
+  }
+}
+
+/**
+ * 删除评论
+ */
+export async function deleteComment(commentId: string, token: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+
+    if (authError || !user) {
+      return { success: false, error: '请先登录' };
+    }
+
+    // 验证评论所有权
+    const { data: comment } = await supabase
+      .from('comments')
+      .select('user_id')
+      .eq('id', commentId)
+      .single();
+
+    if (!comment || comment.user_id !== user.id) {
+      return { success: false, error: '无权删除此评论' };
+    }
+
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) {
+      console.error('[deleteComment] Database error:', error);
+      return { success: false, error: '删除失败' };
+    }
+
+    revalidatePath('/feed');
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('[deleteComment] Error:', error);
+    return { success: false, error: error.message || '删除失败' };
   }
 }

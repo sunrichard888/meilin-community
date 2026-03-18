@@ -6,6 +6,8 @@ import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import ReportButton from "./report-button";
 import ImageLightbox from "./image-lightbox";
+import LikeButton from "./like-button";
+import CommentsSection from "./comments-section";
 
 interface PostCardProps {
   post: PostData;
@@ -121,27 +123,21 @@ function PostCardComponent({ post, userToken, onLike, isLiked }: PostCardProps &
           )}
 
           {/* 底部信息 */}
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
             <time dateTime={post.created_at}>{timeAgo}</time>
             
-            {/* 互动数据 */}
-            <div className="flex items-center gap-4">
-              <button 
-                className="flex items-center gap-1 hover:text-primary transition-colors"
-                aria-label={`点赞，当前${post.likes_count}个赞`}
-              >
-                <span>❤️</span>
-                <span>{post.likes_count}</span>
-              </button>
-              <button 
-                className="flex items-center gap-1 hover:text-primary transition-colors"
-                aria-label={`评论，当前${post.comments_count}条评论`}
-              >
-                <span>💬</span>
-                <span>{post.comments_count}</span>
-              </button>
-            </div>
+            {/* 点赞按钮 */}
+            <LikeButton 
+              postId={post.id} 
+              likesCount={post.likes_count} 
+            />
           </div>
+
+          {/* 评论区 */}
+          <CommentsSection 
+            postId={post.id} 
+            commentsCount={post.comments_count} 
+          />
         </div>
       </div>
     </article>
