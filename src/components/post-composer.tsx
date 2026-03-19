@@ -18,6 +18,7 @@ function PostComposerContent() {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [charCount, setCharCount] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +57,7 @@ function PostComposerContent() {
         body: JSON.stringify({
           content,
           images: imageUrls,
+          category: selectedCategory || undefined,
         }),
       });
 
@@ -105,6 +107,87 @@ function PostComposerContent() {
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {/* 分类选择器 */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("")}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedCategory === ""
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-primary/10'
+                }`}
+              >
+                未分类
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("emergency")}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedCategory === "emergency"
+                    ? 'bg-red-500 text-white'
+                    : 'bg-muted text-muted-foreground hover:bg-red-50 hover:text-red-600'
+                }`}
+              >
+                🚨 紧急通知
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("marketplace")}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedCategory === "marketplace"
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-muted text-muted-foreground hover:bg-orange-50 hover:text-orange-600'
+                }`}
+              >
+                🏪 二手闲置
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("help")}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedCategory === "help"
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-muted text-muted-foreground hover:bg-blue-50 hover:text-blue-600'
+                }`}
+              >
+                🆘 邻里互助
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("event")}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedCategory === "event"
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-muted text-muted-foreground hover:bg-purple-50 hover:text-purple-600'
+                }`}
+              >
+                🎉 社区活动
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("pets")}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedCategory === "pets"
+                    ? 'bg-green-500 text-white'
+                    : 'bg-muted text-muted-foreground hover:bg-green-50 hover:text-green-600'
+                }`}
+              >
+                🐕 宠物交友
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory("food")}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedCategory === "food"
+                    ? 'bg-pink-500 text-white'
+                    : 'bg-muted text-muted-foreground hover:bg-pink-50 hover:text-pink-600'
+                }`}
+              >
+                🍳 美食分享
+              </button>
+            </div>
+
             {/* 输入框 */}
             <Textarea
               value={content}

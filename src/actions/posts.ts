@@ -10,9 +10,10 @@ export interface PostData {
   images: string[];
   likes_count: number;
   comments_count: number;
+  category?: string;
   community_name?: string;
   building_number?: string;
-  is_pinned: boolean;
+  is_pinned?: boolean;
   created_at: string;
   user?: {
     nickname: string;

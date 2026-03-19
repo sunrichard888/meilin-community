@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { usePosts } from "@/lib/hooks";
 import { NavBar } from "@/components/nav-bar";
@@ -12,86 +12,42 @@ import { useToast } from "@/components/ui/toast";
 import { ToastProvider } from "@/components/ui/toast";
 import { Card, CardContent } from "@/components/ui/card";
 
-// 示例帖子数据（冷启动用）
-const samplePosts: any[] = [
-  {
-    id: "sample-1",
-    user_id: "sample-user-1",
-    content: "大家好！我是 3 栋的新邻居，刚搬来不久。很高兴加入美邻网，以后请多多关照！👋 有什么社区活动记得叫我~",
-    images: [],
-    likes_count: 24,
-    comments_count: 8,
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-    user: {
-      nickname: "阳光花园 3 栋",
-      avatar: null,
-    },
-  },
-  {
-    id: "sample-2",
-    user_id: "sample-user-2",
-    content: "【闲置转让】出一台九成新微波炉，买来没用几次，50 元自取。有需要的邻居私信我！📍5 栋 1 单元",
-    images: ["https://images.unsplash.com/photo-1585559700398-1385b3a8aeb6?w=400"],
-    likes_count: 12,
-    comments_count: 3,
-    created_at: new Date(Date.now() - 7200000).toISOString(),
-    user: {
-      nickname: "热心邻居老王",
-      avatar: null,
-    },
-  },
-  {
-    id: "sample-3",
-    user_id: "sample-user-3",
-    content: "【邻里互助】明天上午要去山姆会员店，有要一起拼车的邻居吗？我开 SUV，还能坐 3 个人~ 🚗",
-    images: [],
-    likes_count: 18,
-    comments_count: 11,
-    created_at: new Date(Date.now() - 14400000).toISOString(),
-    user: {
-      nickname: "爱分享的李姐",
-      avatar: null,
-    },
-  },
-  {
-    id: "sample-4",
-    user_id: "sample-user-4",
-    content: "【宠物交友】我家金毛「豆豆」想找小伙伴一起玩！每天傍晚会在小区花园，有同样养狗的邻居可以加我微信~ 🐕",
-    images: ["https://images.unsplash.com/photo-1552053831-71594a27632d?w=400"],
-    likes_count: 45,
-    comments_count: 16,
-    created_at: new Date(Date.now() - 28800000).toISOString(),
-    user: {
-      nickname: "豆豆妈",
-      avatar: null,
-    },
-  },
-  {
-    id: "sample-5",
-    user_id: "sample-user-5",
-    content: "【社区活动】本周六下午 3 点，小区广场举办「邻里美食节」，欢迎大家带上自家拿手菜来分享！🍲 报名接龙：1. 张阿姨 - 红烧肉 2. ...",
-    images: [
-      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400",
-      "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400",
-    ],
-    likes_count: 67,
-    comments_count: 28,
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    user: {
-      nickname: "业委会 - 小陈",
-      avatar: null,
-    },
-  },
-];
+// 分类定义
+const CATEGORIES = [
+  { id: 'all', label: '全部', emoji: '' },
+  { id: 'emergency', label: '紧急通知', emoji: '🚨' },
+  { id: 'marketplace', label: '二手闲置', emoji: '🏪' },
+  { id: 'help', label: '邻里互助', emoji: '🆘' },
+  { id: 'event', label: '社区活动', emoji: '🎉' },
+  { id: 'pets', label: '宠物交友', emoji: '🐕' },
+  { id: 'food', label: '美食分享', emoji: '🍳' },
+] as const;
+
+type CategoryId = typeof CATEGORIES[number]['id'];
+
+// 从内容中自动识别分类
+function detectCategory(content: string): CategoryId {
+  const text = content.toLowerCase();
+  if (text.includes('通知') || text.includes('紧急') || text.includes('公告')) return 'emergency';
+  if (text.includes('闲置') || text.includes('转让') || text.includes('出售') || text.includes('二手')) return 'marketplace';
+  if (text.includes('互助') || text.includes('求助') || text.includes('帮忙') || text.includes('拼车')) return 'help';
+  if (text.includes('活动') || text.includes('报名') || text.includes('聚会') || text.includes('美食节')) return 'event';
+  if (text.includes('宠物') || text.includes('狗') || text.includes('猫') || text.includes('交友')) return 'pets';
+  if (text.includes('美食') || text.includes('食谱') || text.includes('做菜') || text.includes('餐厅')) return 'food';
+  return 'all';
+}
 
 function HomeContent() {
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, signOut } = useAuth();
   const { posts, loading, addPost, likePost } = usePosts();
   const { showToast } = useToast();
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [selectedCategory, setSelectedCategory] = useState<CategoryId>('all');
 
-  // 合并示例帖子和真实帖子
-  const allPosts = posts.length > 0 ? posts : samplePosts;
+  // 根据分类筛选帖子
+  const filteredPosts = selectedCategory === 'all'
+    ? posts
+    : posts.filter(post => post.category === selectedCategory || (!post.category && detectCategory(post.content) === selectedCategory));
 
   const handleAddPost = async (content: string) => {
     try {
@@ -165,27 +121,20 @@ function HomeContent() {
 
             {/* 内容分类标签 */}
             <div className="mb-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              <button className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium whitespace-nowrap">
-                全部
-              </button>
-              <button className="px-4 py-2 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary text-sm font-medium whitespace-nowrap transition-colors">
-                🚨 紧急通知
-              </button>
-              <button className="px-4 py-2 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary text-sm font-medium whitespace-nowrap transition-colors">
-                🏪 二手闲置
-              </button>
-              <button className="px-4 py-2 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary text-sm font-medium whitespace-nowrap transition-colors">
-                🆘 邻里互助
-              </button>
-              <button className="px-4 py-2 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary text-sm font-medium whitespace-nowrap transition-colors">
-                🎉 社区活动
-              </button>
-              <button className="px-4 py-2 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary text-sm font-medium whitespace-nowrap transition-colors">
-                🐕 宠物交友
-              </button>
-              <button className="px-4 py-2 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary text-sm font-medium whitespace-nowrap transition-colors">
-                🍳 美食分享
-              </button>
+              {CATEGORIES.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                    selectedCategory === category.id
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                  }`}
+                >
+                  {category.emoji && <span className="mr-1">{category.emoji}</span>}
+                  {category.label}
+                </button>
+              ))}
             </div>
 
             {/* 帖子列表 */}
@@ -207,20 +156,24 @@ function HomeContent() {
                     </CardContent>
                   </Card>
                 ))
-              ) : allPosts.length === 0 ? (
+              ) : filteredPosts.length === 0 ? (
                 // 空状态
                 <Card>
                   <CardContent className="text-center py-12">
                     <div className="text-6xl mb-4">🌱</div>
                     <h3 className="text-lg font-semibold mb-2">
-                      {user ? "暂无动态" : "欢迎来到美邻网"}
+                      {selectedCategory === 'all' 
+                        ? (user ? "暂无动态" : "欢迎来到美邻网")
+                        : `暂无"${CATEGORIES.find(c => c.id === selectedCategory)?.label}"类帖子`
+                      }
                     </h3>
                     <p className="text-muted-foreground mb-4">
-                      {user
-                        ? "快来发布第一条邻里动态吧！"
-                        : "连接你与邻居的社交平台，加入你的社区"}
+                      {selectedCategory === 'all'
+                        ? (user ? "快来发布第一条邻里动态吧！" : "连接你与邻居的社交平台，加入你的社区")
+                        : `试试切换到其他分类，或发布一篇"${CATEGORIES.find(c => c.id === selectedCategory)?.label}"类帖子`
+                      }
                     </p>
-                    {!user && (
+                    {selectedCategory === 'all' && !user && (
                       <div className="flex gap-2 justify-center">
                         <a href="/login">
                           <button className="px-4 py-2 rounded-lg border font-medium hover:bg-muted transition-colors">
@@ -238,7 +191,7 @@ function HomeContent() {
                 </Card>
               ) : (
                 // 帖子列表
-                allPosts.map((post) => (
+                filteredPosts.map((post) => (
                   <PostCard
                     key={post.id}
                     post={post}
