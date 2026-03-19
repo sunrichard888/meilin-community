@@ -23,6 +23,10 @@ interface UserStats {
   following_count: number;
 }
 
+// 用户帖子缓存
+const userPostsCache = new Map<string, { posts: any[]; timestamp: number }>();
+const POSTS_CACHE_DURATION = 5 * 60 * 1000; // 5 分钟
+
 function UserProfileContentInner() {
   const params = useParams();
   const userId = params.id as string;
@@ -43,23 +47,58 @@ function UserProfileContentInner() {
       const token = localStorage.getItem('token');
       const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-      const [userRes, statsRes, postsRes] = await Promise.all([
+      // 检查帖子缓存
+      const cachedPosts = userPostsCache.get(userId);
+      let postsData: { posts: any[] } = { posts: [] };
+      
+      if (cachedPosts && Date.now() - cachedPosts.timestamp < POSTS_CACHE_DURATION) {
+        console.log('Using cached posts for user:', userId);
+        postsData = { posts: cachedPosts.posts as any[] };
+      } else {
+        // 带重试的获取帖子
+        let retries = 3;
+        let delay = 1000;
+        
+        while (retries > 0) {
+          const postsRes = await fetch(`/api/posts?user_id=${userId}`, { 
+            headers: headers as Record<string, string> 
+          });
+          
+          console.log('Posts response status:', postsRes.status);
+          
+          if (postsRes.status === 429) {
+            const data = await postsRes.json();
+            const retryAfter = parseInt(data.retryAfter) || parseInt(data.message?.match(/(\d+)/)?.[1]) || 5;
+            console.log(`Rate limited, retrying in ${retryAfter} seconds...`);
+            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+            retries--;
+            delay *= 2;
+          } else {
+            postsData = await postsRes.json();
+            console.log('Posts data:', postsData);
+            // 缓存结果
+            userPostsCache.set(userId, { 
+              posts: postsData.posts || postsData || [], 
+              timestamp: Date.now() 
+            });
+            break;
+          }
+        }
+      }
+
+      const [userRes, statsRes] = await Promise.all([
         fetch(`/api/users/${userId}`, { headers: headers as Record<string, string> }),
         fetch(`/api/users/${userId}/stats`, { headers: headers as Record<string, string> }),
-        fetch(`/api/posts?user_id=${userId}`, { headers: headers as Record<string, string> }),
       ]);
 
       console.log('User response status:', userRes.status);
       console.log('Stats response status:', statsRes.status);
-      console.log('Posts response status:', postsRes.status);
 
       const userData = await userRes.json();
       const statsData = await statsRes.json();
-      const postsData = await postsRes.json();
 
       console.log('User data:', userData);
       console.log('Stats data:', statsData);
-      console.log('Posts data:', postsData);
 
       if (userRes.status === 404) {
         setUser(null);

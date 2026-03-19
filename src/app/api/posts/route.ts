@@ -36,7 +36,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 });
     }
 
-    return NextResponse.json({ posts: posts || [] });
+    // 返回数据并添加缓存头
+    return NextResponse.json(
+      { posts: posts || [] },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Error fetching posts:', error);
     return NextResponse.json({ error: error.message || 'Failed to fetch posts' }, { status: 500 });
