@@ -1,92 +1,103 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// GET - 搜索帖子或用户
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const q = searchParams.get('q');
-    const type = searchParams.get('type') || 'all'; // 'posts', 'users', 'all'
+    const query = searchParams.get('q') || '';
+    const category = searchParams.get('category');
+    const sort = searchParams.get('sort') || 'latest'; // latest | hottest
+    const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const offset = parseInt(searchParams.get('offset') || '0');
-    const community = searchParams.get('community');
+    const offset = (page - 1) * limit;
 
-    if (!q || !q.trim()) {
-      return NextResponse.json(
-        { error: '缺少搜索关键词' },
-        { status: 400 }
-      );
-    }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    const results: any = {};
-
-    // 搜索帖子
-    if (type === 'all' || type === 'posts') {
-      const { data: postsData, error: postsError } = await supabase.rpc('search_posts', {
-        search_query: q.trim(),
-        p_limit: limit,
-        p_offset: offset,
-        p_community_name: community || null,
-        p_user_id: null,
+    if (!query && !category) {
+      return NextResponse.json({
+        results: [],
+        total: 0,
+        page,
+        totalPages: 0,
       });
-
-      if (postsError) {
-        console.error('[GET /api/search] Posts search error:', postsError);
-        // 降级处理：直接查询
-        const { data: fallbackPosts } = await supabase
-          .from('posts')
-          .select(`
-            *,
-            user:users (
-              nickname,
-              avatar
-            )
-          `)
-          .ilike('content', `%${q.trim()}%`)
-          .order('created_at', { ascending: false })
-          .range(offset, offset + limit - 1);
-
-        results.posts = fallbackPosts || [];
-      } else {
-        results.posts = postsData || [];
-      }
     }
 
-    // 搜索用户
-    if (type === 'all' || type === 'users') {
-      // 尝试使用数据库函数，如果不存在则直接查询
-      const { data: usersData, error: usersError } = await supabase.rpc('search_users', {
-        search_query: q.trim(),
-        p_limit: limit,
-        p_offset: offset,
+    // 构建查询
+    let dbQuery = supabase
+      .from('posts')
+      .select(`
+        *,
+        user:users (
+          id,
+          nickname,
+          avatar
+        )
+      `, { count: 'exact' });
+
+    // 全文搜索
+    if (query) {
+      // 使用全文搜索
+      dbQuery = dbQuery.textSearch('search_vector', query, {
+        config: 'simple',
+        type: 'websearch',
       });
-
-      if (usersError) {
-        console.error('[GET /api/search] Users search error, using fallback:', usersError);
-        // 降级处理：直接查询
-        const { data: fallbackUsers } = await supabase
-          .from('users')
-          .select('id, nickname, avatar, created_at, follows_count, followers_count')
-          .ilike('nickname', `%${q.trim()}%`)
-          .range(offset, offset + limit - 1);
-
-        results.users = fallbackUsers || [];
-      } else {
-        results.users = usersData || [];
-      }
     }
 
-    return NextResponse.json({ success: true, data: results });
+    // 分类筛选
+    if (category) {
+      dbQuery = dbQuery.eq('category', category);
+    }
+
+    // 排序
+    if (sort === 'hottest') {
+      dbQuery = dbQuery.order('likes_count', { ascending: false });
+    } else {
+      dbQuery = dbQuery.order('created_at', { ascending: false });
+    }
+
+    // 分页
+    dbQuery = dbQuery.range(offset, offset + limit - 1);
+
+    const { data: posts, error, count } = await dbQuery;
+
+    if (error) {
+      console.error('Search error:', error);
+      return NextResponse.json({ error: 'Search failed' }, { status: 500 });
+    }
+
+    // 如果没有使用全文搜索，进行前端关键词匹配
+    let results = posts || [];
+    if (query && !posts?.length) {
+      // 尝试简单的 LIKE 查询作为后备
+      const { data: fallbackData } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          user:users (
+            id,
+            nickname,
+            avatar
+          )
+        `)
+        .ilike('content', `%${query}%`)
+        .limit(limit);
+
+      results = fallbackData || [];
+    }
+
+    return NextResponse.json({
+      results,
+      total: count || 0,
+      page,
+      totalPages: Math.ceil((count || 0) / limit),
+      query,
+      category,
+    });
   } catch (error: any) {
-    console.error('[GET /api/search] Error:', error);
-    return NextResponse.json(
-      { error: error.message || '搜索失败' },
-      { status: 500 }
-    );
+    console.error('Search error:', error);
+    return NextResponse.json({ error: error.message || 'Search failed' }, { status: 500 });
   }
 }
