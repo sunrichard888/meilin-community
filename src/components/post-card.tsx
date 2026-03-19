@@ -9,6 +9,7 @@ import ReportButton from "./report-button";
 import ImageLightbox from "./image-lightbox";
 import LikeButton from "./like-button";
 import CommentsSection from "./comments-section";
+import PostActions from "./post-actions";
 
 interface PostCardProps {
   post: PostData;
@@ -80,12 +81,22 @@ function PostCardComponent({ post, userToken, onLike, isLiked }: PostCardProps &
               )}
             </div>
 
-            {/* 举报按钮（右上角） */}
-            {userToken && (
-              <div className="flex-shrink-0">
+            <div className="flex items-center gap-1">
+              {/* 帖子操作菜单（仅作者可见） */}
+              <PostActions
+                postId={post.id}
+                postContent={post.content}
+                postImages={post.images}
+                postCategory={post.category}
+                isOwner={!!(userToken && post.user_id === (typeof window !== 'undefined' ? localStorage.getItem('user_id') : null))}
+                onDelete={() => window.location.reload()}
+                onUpdate={() => window.location.reload()}
+              />
+              {/* 举报按钮 */}
+              {userToken && (
                 <ReportButton postId={post.id} token={userToken} />
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* 帖子内容 */}

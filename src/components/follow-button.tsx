@@ -1,120 +1,109 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/toast";
 
 interface FollowButtonProps {
-  userId: string;
-  initialFollowing?: boolean;
+  targetUserId: string;
+  variant?: 'default' | 'outline';
+  size?: 'default' | 'sm' | 'lg';
 }
 
-export default function FollowButton({ userId, initialFollowing = false }: FollowButtonProps) {
-  const { user, getToken } = useAuth();
-  const router = useRouter();
-  const [following, setFollowing] = useState(initialFollowing);
-  const [loading, setLoading] = useState(false);
+export default function FollowButton({
+  targetUserId,
+  variant = 'default',
+  size = 'default',
+}: FollowButtonProps) {
+  const { showToast } = useToast();
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // 检查关注状态
   useEffect(() => {
-    if (user && user.id !== userId) {
-      checkFollowStatus();
-    }
-  }, [userId, user]);
+    checkFollowStatus();
+  }, [targetUserId]);
 
   const checkFollowStatus = async () => {
     try {
-      const token = await getToken();
-      const response = await fetch(`/api/follows/check?user_id=${userId}`, {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch(`/api/follows/check?target_user_id=${targetUserId}`, {
         headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
+          'Authorization': `Bearer ${token}`,
         },
       });
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        setFollowing(result.following);
-      }
+      const data = await res.json();
+      setIsFollowing(data.is_following || false);
     } catch (error) {
-      console.error('检查关注状态失败:', error);
-    }
-  };
-
-  const handleFollow = async () => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    if (user.id === userId) {
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const token = await getToken();
-      
-      if (following) {
-        // 取消关注
-        const response = await fetch(`/api/follows?user_id=${userId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : '',
-          },
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          setFollowing(false);
-        } else {
-          alert(result.error || '取消关注失败');
-        }
-      } else {
-        // 关注
-        const response = await fetch('/api/follows', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : '',
-          },
-          body: JSON.stringify({
-            followee_id: userId,
-          }),
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          setFollowing(true);
-        } else {
-          alert(result.error || '关注失败');
-        }
-      }
-    } catch (error: any) {
-      alert(error.message || '操作失败');
+      console.error('Check follow status error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // 自己不显示关注按钮
-  if (user && user.id === userId) {
-    return null;
+  const handleToggleFollow = async () => {
+    if (!localStorage.getItem('token')) {
+      showToast('请先登录', 'error');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      
+      const res = await fetch('/api/follows', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          target_user_id: targetUserId,
+          action: isFollowing ? 'unfollow' : 'follow',
+        }),
+      });
+
+      const result = await res.json();
+
+      if (res.ok && result.success) {
+        setIsFollowing(!isFollowing);
+        showToast(
+          isFollowing ? '已取消关注' : '关注成功',
+          'success'
+        );
+      } else {
+        showToast(result.error || '操作失败', 'error');
+      }
+    } catch (error: any) {
+      console.error('Toggle follow error:', error);
+      showToast('操作失败', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Button variant={variant} size={size} disabled>
+        加载中...
+      </Button>
+    );
   }
 
   return (
     <Button
-      onClick={handleFollow}
-      disabled={loading}
-      variant={following ? "outline" : "default"}
-      size="sm"
-      className={following ? "border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" : ""}
+      variant={isFollowing ? 'outline' : variant}
+      size={size}
+      onClick={handleToggleFollow}
+      disabled={actionLoading}
     >
-      {loading ? '处理中...' : following ? '已关注' : '关注'}
+      {isFollowing ? '👤 已关注' : '➕ 关注'}
     </Button>
   );
 }
