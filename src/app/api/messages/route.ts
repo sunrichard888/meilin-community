@@ -1,65 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// GET - 获取消息历史
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+// GET - 获取消息列表（按会话分组）
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const room_id = searchParams.get('room_id');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
-
-    if (!room_id) {
-      return NextResponse.json(
-        { error: '缺少 room_id 参数' },
-        { status: 400 }
-      );
-    }
-
-    // 验证 token
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: '未授权' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
+    if (!token) {
+      return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    }
+
     const authClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
     
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+
     if (authError || !user) {
-      return NextResponse.json(
-        { error: '认证失败' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    // 验证用户是否有权限访问此会话
-    const { data: room } = await supabase
-      .from('message_rooms')
-      .select('user1_id, user2_id')
-      .eq('id', room_id)
-      .single();
-
-    if (!room || (room.user1_id !== user.id && room.user2_id !== user.id)) {
-      return NextResponse.json(
-        { error: '无权访问此会话' },
-        { status: 403 }
-      );
-    }
-
-    const { data, error } = await supabase
+    // 获取用户的消息会话（按对方用户分组）
+    const { data: messages, error } = await supabase
       .from('messages')
       .select(`
         *,
@@ -67,107 +35,90 @@ export async function GET(request: NextRequest) {
           id,
           nickname,
           avatar
+        ),
+        to_user:users!messages_to_user_id_fkey (
+          id,
+          nickname,
+          avatar
         )
       `)
-      .eq('room_id', room_id)
+      .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .limit(100);
 
     if (error) {
-      console.error('[GET /api/messages] Database error:', error);
-      return NextResponse.json(
-        { error: '获取消息失败', success: false },
-        { status: 500 }
-      );
+      console.error('Error fetching messages:', error);
+      return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, data: data || [] });
-  } catch (error: any) {
-    console.error('[GET /api/messages] Error:', error);
-    return NextResponse.json(
-      { error: error.message || '获取消息失败', success: false },
-      { status: 500 }
+    // 按会话分组
+    const conversations = new Map<string, any>();
+
+    messages?.forEach((msg) => {
+      const otherUserId = msg.from_user_id === user.id ? msg.to_user_id : msg.from_user_id;
+      const otherUser = msg.from_user_id === user.id ? msg.to_user : msg.from_user;
+
+      if (!conversations.has(otherUserId)) {
+        conversations.set(otherUserId, {
+          user: otherUser,
+          lastMessage: msg,
+          unreadCount: 0,
+        });
+      }
+
+      // 计算未读数
+      if (!msg.read && msg.to_user_id === user.id) {
+        conversations.get(otherUserId).unreadCount += 1;
+      }
+    });
+
+    const result = Array.from(conversations.values()).sort((a, b) => 
+      new Date(b.lastMessage.created_at).getTime() - new Date(a.lastMessage.created_at).getTime()
     );
+
+    return NextResponse.json({ conversations: result });
+  } catch (error: any) {
+    console.error('Error fetching conversations:', error);
+    return NextResponse.json({ error: error.message || 'Failed to fetch messages' }, { status: 500 });
   }
 }
 
 // POST - 发送消息
 export async function POST(request: NextRequest) {
   try {
-    const { room_id, content } = await request.json();
-
-    if (!room_id || !content) {
-      return NextResponse.json(
-        { error: '缺少必要参数' },
-        { status: 400 }
-      );
-    }
-
-    // 验证 token
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: '未授权' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
+    if (!token) {
+      return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    }
+
     const authClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
     
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token);
+
     if (authError || !user) {
-      return NextResponse.json(
-        { error: '认证失败' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: '请先登录' }, { status: 401 });
     }
 
-    // 验证内容
-    if (!content.trim()) {
+    const body = await request.json();
+    const { to_user_id, content } = body;
+
+    if (!to_user_id || !content?.trim()) {
       return NextResponse.json(
-        { error: '消息内容不能为空' },
+        { error: '收件人和内容不能为空' },
         { status: 400 }
-      );
-    }
-
-    if (content.length > 1000) {
-      return NextResponse.json(
-        { error: '消息内容不能超过 1000 字' },
-        { status: 400 }
-      );
-    }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
-    // 验证用户是否有权限在此会话中发送消息
-    const { data: room } = await supabase
-      .from('message_rooms')
-      .select('user1_id, user2_id')
-      .eq('id', room_id)
-      .single();
-
-    if (!room || (room.user1_id !== user.id && room.user2_id !== user.id)) {
-      return NextResponse.json(
-        { error: '无权在此会话中发送消息' },
-        { status: 403 }
       );
     }
 
     const { data, error } = await supabase
       .from('messages')
       .insert({
-        room_id,
         from_user_id: user.id,
+        to_user_id,
         content: content.trim(),
-        created_at: new Date().toISOString(),
       })
       .select(`
         *,
@@ -180,19 +131,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('[POST /api/messages] Database error:', error);
-      return NextResponse.json(
-        { error: '发送消息失败', success: false },
-        { status: 500 }
-      );
+      console.error('Error sending message:', error);
+      return NextResponse.json({ error: '发送失败' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
-    console.error('[POST /api/messages] Error:', error);
-    return NextResponse.json(
-      { error: error.message || '发送消息失败', success: false },
-      { status: 500 }
-    );
+    console.error('Error sending message:', error);
+    return NextResponse.json({ error: error.message || '发送失败' }, { status: 500 });
   }
 }
