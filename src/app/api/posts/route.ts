@@ -1,6 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPost } from '@/actions/posts';
+import { createClient } from '@supabase/supabase-js';
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+// GET - 获取帖子列表（支持按用户 ID 筛选）
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const userId = searchParams.get('user_id');
+
+    let query = supabase
+      .from('posts')
+      .select(`
+        *,
+        user:users (
+          id,
+          nickname,
+          avatar
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data: posts, error } = await query;
+
+    if (error) {
+      console.error('Error fetching posts:', error);
+      return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 });
+    }
+
+    return NextResponse.json({ posts: posts || [] });
+  } catch (error: any) {
+    console.error('Error fetching posts:', error);
+    return NextResponse.json({ error: error.message || 'Failed to fetch posts' }, { status: 500 });
+  }
+}
+
+// POST - 创建新帖子
 export async function POST(request: NextRequest) {
   try {
     // 支持 JSON 和 FormData
