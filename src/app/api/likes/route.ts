@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// 简单的内存速率限制（生产环境建议用 Redis）
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 10; // 10 次
+const RATE_WINDOW = 60 * 1000; // 1 分钟
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(userId);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_WINDOW });
+    return true;
+  }
+
+  if (record.count >= RATE_LIMIT) {
+    return false;
+  }
+
+  record.count += 1;
+  return true;
+}
+
 // POST - 点赞/取消点赞
 export async function POST(request: NextRequest) {
   try {
@@ -34,6 +56,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: '认证失败' },
         { status: 401 }
+      );
+    }
+
+    // 速率限制检查
+    if (!checkRateLimit(user.id)) {
+      return NextResponse.json(
+        { error: '操作过于频繁，请稍后再试' },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+          },
+        }
       );
     }
 
@@ -127,6 +162,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       liked: !!data 
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
     });
   } catch (error: any) {
     console.error('[GET /api/likes] Error:', error);

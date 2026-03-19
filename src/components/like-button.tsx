@@ -1,100 +1,144 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/lib/auth";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 
 interface LikeButtonProps {
   postId: string;
   likesCount: number;
-  initialLiked?: boolean;
 }
 
-export default function LikeButton({ postId, likesCount: initialLikesCount, initialLiked = false }: LikeButtonProps) {
-  const { user, getToken } = useAuth();
-  const router = useRouter();
-  const [liked, setLiked] = useState(initialLiked);
+// 点赞状态缓存（内存缓存，10 分钟过期）
+const likeCache = new Map<string, { liked: boolean; timestamp: number }>();
+const CACHE_DURATION = 10 * 60 * 1000; // 10 分钟
+
+// 防抖函数
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null;
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
+export default function LikeButton({ postId, likesCount: initialLikesCount }: LikeButtonProps) {
+  const { showToast } = useToast();
+  const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikesCount);
   const [loading, setLoading] = useState(false);
 
-  // 检查用户是否已点赞
-  useEffect(() => {
-    if (user) {
-      checkLikeStatus();
+  // 从缓存读取点赞状态
+  const getCachedLike = useCallback(() => {
+    const cached = likeCache.get(postId);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return cached.liked;
     }
-  }, [postId, user]);
+    return null;
+  }, [postId]);
 
-  const checkLikeStatus = async () => {
-    try {
-      const token = await getToken();
-      const response = await fetch(`/api/likes?post_id=${postId}`, {
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-        },
-      });
+  // 写入缓存
+  const setCachedLike = useCallback((liked: boolean) => {
+    likeCache.set(postId, { liked, timestamp: Date.now() });
+  }, [postId]);
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        setLiked(result.liked);
-      }
-    } catch (error) {
-      console.error('检查点赞状态失败:', error);
-    }
-  };
-
-  const handleLike = async () => {
-    if (!user) {
-      router.push('/login');
+  // 检查点赞状态（带缓存）
+  const checkLikeStatus = useCallback(async () => {
+    const cached = getCachedLike();
+    if (cached !== null) {
+      setIsLiked(cached);
       return;
     }
 
-    setLoading(true);
-
     try {
-      const token = await getToken();
-      const response = await fetch('/api/likes', {
-        method: 'POST',
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsLiked(false);
+        return;
+      }
+
+      const res = await fetch(`/api/likes?post_id=${postId}`, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          post_id: postId,
-        }),
       });
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        // 更新状态
-        setLiked(result.liked);
-        setLikesCount(prev => result.liked ? prev + 1 : prev - 1);
-      } else {
-        alert(result.error || '操作失败');
+      if (res.ok) {
+        const data = await res.json();
+        setIsLiked(data.liked || false);
+        setCachedLike(data.liked || false);
       }
-    } catch (error: any) {
-      alert(error.message || '操作失败');
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Check like status error:', error);
     }
-  };
+  }, [postId, getCachedLike, setCachedLike]);
+
+  useEffect(() => {
+    checkLikeStatus();
+  }, [checkLikeStatus]);
+
+  // 防抖的点赞处理
+  const debouncedToggleLike = useMemo(
+    () => debounce(async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showToast('请先登录', 'error');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // 乐观更新
+        setIsLiked((prev) => !prev);
+        setLikesCount((prev) => prev + (isLiked ? -1 : 1));
+
+        const res = await fetch('/api/likes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ post_id: postId }),
+        });
+
+        const result = await res.json();
+
+        if (res.ok && result.success) {
+          setCachedLike(result.liked);
+        } else {
+          // 回滚
+          setIsLiked((prev) => !prev);
+          setLikesCount((prev) => prev + (result.liked ? 1 : -1));
+          showToast(result.error || '操作失败', 'error');
+        }
+      } catch (error: any) {
+        console.error('Toggle like error:', error);
+        // 回滚
+        setIsLiked((prev) => !prev);
+        setLikesCount((prev) => prev + (isLiked ? 1 : -1));
+        showToast('操作失败', 'error');
+      } finally {
+        setLoading(false);
+      }
+    }, 300), // 300ms 防抖
+    [postId, isLiked, showToast, setCachedLike]
+  );
 
   return (
-    <button
-      onClick={handleLike}
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={debouncedToggleLike}
       disabled={loading}
-      className={`flex items-center gap-1 transition-colors ${
-        liked 
-          ? 'text-red-500 hover:text-red-600' 
-          : 'text-muted-foreground hover:text-red-500'
-      } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-      aria-label={liked ? '取消点赞' : '点赞'}
+      className={`flex items-center gap-1 ${
+        isLiked ? 'text-red-500 hover:text-red-600' : 'text-muted-foreground'
+      }`}
     >
-      <span className={`transform transition-transform ${liked ? 'scale-110' : ''}`}>
-        ❤️
-      </span>
-      <span className="text-sm">{likesCount}</span>
-    </button>
+      {isLiked ? '❤️' : '🤍'}
+      <span>{likesCount}</span>
+    </Button>
   );
 }
