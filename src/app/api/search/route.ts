@@ -11,17 +11,50 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('q') || '';
     const category = searchParams.get('category');
+    const type = searchParams.get('type') || 'all'; // all | posts | users
     const sort = searchParams.get('sort') || 'latest'; // latest | hottest
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = (page - 1) * limit;
 
-    if (!query && !category) {
+    // 搜索用户
+    if (type === 'users' || (type === 'all' && query)) {
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, nickname, avatar, role, created_at')
+        .ilike('nickname', `%${query}%`)
+        .limit(limit);
+
+      if (type === 'users') {
+        return NextResponse.json({
+          results: users || [],
+          users: users || [],
+          posts: [],
+          total: users?.length || 0,
+          type: 'users',
+        });
+      }
+
+      // 混合搜索：返回帖子和用户
+      const { data: posts } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          user:users (
+            id,
+            nickname,
+            avatar
+          )
+        `)
+        .ilike('content', `%${query}%`)
+        .limit(limit);
+
       return NextResponse.json({
-        results: [],
-        total: 0,
-        page,
-        totalPages: 0,
+        results: [...(users || []), ...(posts || [])],
+        users: users || [],
+        posts: posts || [],
+        total: (users?.length || 0) + (posts?.length || 0),
+        type: 'mixed',
       });
     }
 

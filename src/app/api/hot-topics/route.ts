@@ -18,9 +18,16 @@ const CATEGORY_LABELS: Record<string, { label: string; emoji: string }> = {
 export async function GET() {
   try {
     // 获取各分类的统计数据
-    const { data: posts } = await supabase
+    const { data: posts, error } = await supabase
       .from('posts')
       .select('category, likes_count, comments_count, user_id, created_at');
+
+    if (error) {
+      console.error('Error fetching posts:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    console.log('Fetched posts:', posts?.length);
 
     if (!posts || posts.length === 0) {
       return NextResponse.json([]);

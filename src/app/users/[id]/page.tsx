@@ -38,22 +38,37 @@ function UserProfileContentInner() {
 
   const fetchUserData = async () => {
     try {
+      console.log('Fetching user:', userId);
+      
       const token = localStorage.getItem('token');
       const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
 
       const [userRes, statsRes, postsRes] = await Promise.all([
         fetch(`/api/users/${userId}`, { headers: headers as Record<string, string> }),
         fetch(`/api/users/${userId}/stats`, { headers: headers as Record<string, string> }),
-        fetch(`/api/users/${userId}/posts`, { headers: headers as Record<string, string> }),
+        fetch(`/api/posts?user_id=${userId}`, { headers: headers as Record<string, string> }),
       ]);
+
+      console.log('User response status:', userRes.status);
+      console.log('Stats response status:', statsRes.status);
+      console.log('Posts response status:', postsRes.status);
 
       const userData = await userRes.json();
       const statsData = await statsRes.json();
       const postsData = await postsRes.json();
 
+      console.log('User data:', userData);
+      console.log('Stats data:', statsData);
+      console.log('Posts data:', postsData);
+
+      if (userRes.status === 404) {
+        setUser(null);
+        return;
+      }
+
       setUser(userData);
       setStats(statsData);
-      setPosts(postsData.posts || []);
+      setPosts(postsData.posts || postsData || []);
     } catch (error) {
       console.error('Fetch user data error:', error);
     } finally {

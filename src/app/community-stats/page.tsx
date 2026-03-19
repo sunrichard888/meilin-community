@@ -57,11 +57,18 @@ export default function CommunityStatsPage() {
       const communitiesData = await communitiesRes.json();
       const usersData = await usersRes.json();
 
-      setStats(statsData);
-      setCommunities(communitiesData);
-      setUsers(usersData);
+      console.log('Stats data:', statsData);
+      console.log('Communities data:', communitiesData);
+      console.log('Users data:', usersData);
+
+      setStats(statsData || null);
+      setCommunities(communitiesData || []);
+      setUsers(usersData || []);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+      setStats(null);
+      setCommunities([]);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
