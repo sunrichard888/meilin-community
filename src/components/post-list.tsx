@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { PostData } from "@/actions/posts";
 import PostCard from "@/components/post-card";
+import { EmptyState } from "@/components/empty-state";
+import Link from "next/link";
 
 interface PostListProps {
   initialPosts: PostData[];
@@ -49,7 +51,7 @@ export default function PostList({ initialPosts }: PostListProps) {
 
       {/* 帖子列表 */}
       {filteredPosts.length === 0 ? (
-        <EmptyState filter={filter} />
+        <EmptyStateComponent filter={filter} />
       ) : (
         <div className="space-y-4">
           {filteredPosts.map((post) => (
@@ -61,26 +63,30 @@ export default function PostList({ initialPosts }: PostListProps) {
   );
 }
 
-function EmptyState({ filter }: { filter: "all" | "my_community" }) {
+function EmptyStateComponent({ filter }: { filter: "all" | "my_community" }) {
   if (filter === "my_community") {
     return (
-      <div className="text-center py-12">
-        <div className="text-4xl mb-4">🏘️</div>
-        <h3 className="text-lg font-semibold mb-2">暂无本小区帖子</h3>
-        <p className="text-muted-foreground">
-          成为第一个发帖的人吧！
-        </p>
-      </div>
+      <EmptyState
+        icon="🏘️"
+        title="暂无本小区帖子"
+        description="成为第一个发帖的人吧！"
+        action={{
+          label: "发布帖子",
+          href: "/dashboard"
+        }}
+      />
     );
   }
 
   return (
-    <div className="text-center py-12">
-      <div className="text-4xl mb-4">📝</div>
-      <h3 className="text-lg font-semibold mb-2">还没有帖子</h3>
-      <p className="text-muted-foreground">
-        发布第一条社区动态吧！
-      </p>
-    </div>
+    <EmptyState
+      icon="📝"
+      title="还没有帖子"
+      description="发布第一条社区动态吧！"
+      action={{
+        label: "发布帖子",
+        href: "/dashboard"
+      }}
+    />
   );
 }
