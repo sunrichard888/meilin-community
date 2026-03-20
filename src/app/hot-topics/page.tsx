@@ -19,10 +19,16 @@ interface TopicStats {
 
 interface HotPost {
   id: string;
-  title: string;
-  author: string;
+  title?: string;
+  content?: string;
+  author?: string;
+  user?: {
+    nickname: string;
+  };
   likes: number;
+  likes_count?: number;
   comments: number;
+  comments_count?: number;
   category: string;
 }
 
@@ -54,8 +60,14 @@ export default function HotTopicsPage() {
       const topicsData = await topicsRes.json();
       const postsData = await postsRes.json();
 
-      setTopics(topicsData);
-      setHotPosts(postsData);
+      console.log('Topics data:', topicsData);
+      console.log('Posts data:', postsData);
+
+      setTopics(Array.isArray(topicsData) ? topicsData : []);
+      
+      // API 返回格式：{ success: true, data: [...] }
+      const posts = postsData.success ? postsData.data : (postsData || []);
+      setHotPosts(Array.isArray(posts) ? posts : []);
     } catch (error) {
       console.error('Failed to fetch hot topics:', error);
     } finally {
@@ -151,6 +163,14 @@ export default function HotTopicsPage() {
               <div className="space-y-3">
                 {hotPosts.map((post) => {
                   const categoryInfo = CATEGORY_LABELS[post.category] || { label: '其他', emoji: '📌' };
+                  // 内容截取作为标题
+                  const title = post.title || (post.content ? post.content.slice(0, 30) + '...' : '无标题');
+                  // 作者名称
+                  const author = post.author || post.user?.nickname || '匿名用户';
+                  // 点赞和评论数
+                  const likes = post.likes ?? post.likes_count ?? 0;
+                  const comments = post.comments ?? post.comments_count ?? 0;
+                  
                   return (
                     <Link
                       key={post.id}
@@ -162,19 +182,19 @@ export default function HotTopicsPage() {
                           <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
                             {categoryInfo.emoji} {categoryInfo.label}
                           </span>
-                          <div className="font-medium">{post.title}</div>
+                          <div className="font-medium">{title}</div>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          作者：{post.author}
+                          作者：{author}
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <div className="text-sm text-muted-foreground">
-                            ❤️ {post.likes}
+                            ❤️ {likes}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            💬 {post.comments}
+                            💬 {comments}
                           </div>
                         </div>
                         <Button variant="ghost" size="sm">
