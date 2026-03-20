@@ -12,6 +12,17 @@ interface HotTopic {
   category?: string;
 }
 
+interface HotPost {
+  id: string;
+  content: string;
+  category: string;
+  likes_count: number;
+  comments_count: number;
+  user?: {
+    nickname: string;
+  };
+}
+
 const defaultHotTopics: HotTopic[] = [
   { icon: "🔥", title: "全部帖子", count: 0 },
   { icon: "🏪", title: "二手闲置", count: 0 },
@@ -19,6 +30,16 @@ const defaultHotTopics: HotTopic[] = [
   { icon: "🎉", title: "社区活动", count: 0 },
   { icon: "🐕", title: "宠物交友", count: 0 },
 ];
+
+const categoryEmojis: Record<string, string> = {
+  emergency: "🚨",
+  marketplace: "🏪",
+  help: "🆘",
+  event: "🎉",
+  pets: "🐕",
+  food: "🍳",
+  notice: "📢",
+};
 
 interface Announcement {
   id: string;
@@ -48,56 +69,25 @@ function timeAgo(dateString: string): string {
 }
 
 export function SideBar() {
-  const [hotTopics, setHotTopics] = useState<HotTopic[]>(defaultHotTopics);
+  const [hotPosts, setHotPosts] = useState<HotPost[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchHotTopics();
+    fetchHotPosts();
     fetchAnnouncements();
   }, []);
 
-  const fetchHotTopics = async () => {
+  const fetchHotPosts = async () => {
     try {
-      const response = await fetch('/api/posts/categories');
+      const response = await fetch('/api/posts/hot?limit=15');
       const data = await response.json();
       
-      if (response.ok && data.categories) {
-        // 映射 API 数据到显示格式
-        const categoryIcons: Record<string, string> = {
-          all: "🔥",
-          marketplace: "🏪",
-          help: "🆘",
-          event: "🎉",
-          pets: "🐕",
-          emergency: "🚨",
-          notice: "📢",
-        };
-
-        const categoryNames: Record<string, string> = {
-          all: "全部帖子",
-          marketplace: "二手闲置",
-          help: "邻里互助",
-          event: "社区活动",
-          pets: "宠物交友",
-          emergency: "紧急通知",
-          notice: "公告通知",
-        };
-
-        const topics: HotTopic[] = data.categories.map((cat: any) => ({
-          icon: categoryIcons[cat.category] || "📌",
-          title: categoryNames[cat.category] || cat.category,
-          count: cat.count,
-          category: cat.category,
-        }));
-
-        // 确保至少有默认数据
-        if (topics.length > 0) {
-          setHotTopics(topics.slice(0, 5));
-        }
+      if (response.ok && data.success && data.data) {
+        setHotPosts(data.data.slice(0, 15));
       }
     } catch (error) {
-      console.error('获取热门话题失败:', error);
+      console.error('获取热门帖子失败:', error);
     }
   };
 
@@ -119,38 +109,57 @@ export function SideBar() {
 
   return (
     <aside className="hidden lg:block w-80 space-y-4">
-      {/* 热门话题 */}
+      {/* 热门帖子 */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            🔥 热门话题
+            🔥 热门帖子
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {hotTopics.map((topic, i) => (
-            <Link
-              key={i}
-              href={`/hot-topics`}
-              className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors group"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{topic.icon}</span>
-                <span className="text-sm font-medium group-hover:text-primary transition-colors">
-                  {topic.title}
-                </span>
-              </div>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                {topic.count}
-              </span>
-            </Link>
-          ))}
+          {loading ? (
+            <div className="text-center py-4 text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-xs">加载中...</p>
+            </div>
+          ) : hotPosts.length > 0 ? (
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {hotPosts.map((post) => (
+                <Link
+                  key={post.id}
+                  href={`/posts/${post.id}`}
+                  className="block p-2 rounded-lg hover:bg-muted transition-colors group"
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="text-lg flex-shrink-0">
+                      {categoryEmojis[post.category] || "📌"}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
+                        {post.content.slice(0, 40)}{post.content.length > 40 ? '...' : ''}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                        <span>{post.user?.nickname || '匿名用户'}</span>
+                        <span>❤️ {post.likes_count}</span>
+                        <span>💬 {post.comments_count}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              <p className="text-xs">暂无热门帖子</p>
+            </div>
+          )}
           {/* 查看更多 */}
           <div className="pt-2 mt-2 border-t">
             <Link
               href="/hot-topics"
               className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center justify-center gap-1"
             >
-              查看更多话题
+              查看更多
               <span className="text-xs">→</span>
             </Link>
           </div>
