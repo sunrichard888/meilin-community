@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 
 const hotTopics = [
   { icon: "🔥", title: "本周热门", count: 128 },
@@ -12,31 +13,57 @@ const hotTopics = [
   { icon: "🐕", title: "宠物交友", count: 24 },
 ];
 
-const announcements = [
-  {
-    icon: "📢",
-    title: "社区公告",
-    content: "欢迎新邻居加入美邻网！",
-    time: "1 小时前",
-    hot: true,
-  },
-  {
-    icon: "⚠️",
-    title: "安全提醒",
-    content: "近期请注意防范电信诈骗",
-    time: "2 小时前",
-    hot: false,
-  },
-  {
-    icon: "🔧",
-    title: "停水通知",
-    content: "周三上午 9-12 点小区停水",
-    time: "1 天前",
-    hot: false,
-  },
-];
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  is_pinned: boolean;
+  created_at: string;
+}
+
+const categoryIcons: Record<string, string> = {
+  notice: "📢",
+  event: "🎉",
+  safety: "⚠️",
+  other: "📌",
+};
+
+function timeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (seconds < 60) return '刚刚';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟前`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}小时前`;
+  return `${Math.floor(seconds / 86400)}天前`;
+}
 
 export function SideBar() {
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
+
+  const fetchAnnouncements = async () => {
+    try {
+      const response = await fetch('/api/announcements');
+      const data = await response.json();
+      
+      if (response.ok) {
+        // 只取前 3 条公告
+        setAnnouncements((data || []).slice(0, 3));
+      }
+    } catch (error) {
+      console.error('获取公告失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <aside className="hidden lg:block w-80 space-y-4">
       {/* 热门话题 */}
@@ -85,33 +112,46 @@ export function SideBar() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {announcements.map((item, i) => (
-            <Link
-              key={i}
-              href="/announcements"
-              className="block p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-            >
-              <div className="flex items-start gap-2">
-                <span className="text-lg flex-shrink-0">{item.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{item.title}</span>
-                    {item.hot && (
-                      <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
-                        新
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {item.content}
-                  </p>
-                  <span className="text-[10px] text-muted-foreground mt-1 block">
-                    {item.time}
+          {loading ? (
+            <div className="text-center py-4 text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-xs">加载中...</p>
+            </div>
+          ) : announcements.length > 0 ? (
+            announcements.map((item, i) => (
+              <Link
+                key={item.id}
+                href="/announcements"
+                className="block p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+              >
+                <div className="flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">
+                    {categoryIcons[item.category] || "📌"}
                   </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{item.title}</span>
+                      {item.is_pinned && (
+                        <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                          置顶
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {item.content}
+                    </p>
+                    <span className="text-[10px] text-muted-foreground mt-1 block">
+                      {timeAgo(item.created_at)}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              <p className="text-xs">暂无公告</p>
+            </div>
+          )}
           {/* 查看更多 */}
           <div className="pt-2 mt-2 border-t">
             <Link
@@ -126,6 +166,47 @@ export function SideBar() {
       </Card>
 
       {/* 社区统计 */}
+      <CommunityStatsCard />
+    </aside>
+  );
+}
+
+// 社区统计卡片组件
+function CommunityStatsCard() {
+  const [stats, setStats] = useState({
+    activeUsers: 0,
+    postsToday: 0,
+    totalPosts: 0,
+    totalUsers: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/admin/stats');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setStats({
+          activeUsers: data.activeUsers7d || 0,
+          postsToday: data.postsToday || 0,
+          totalPosts: data.totalPosts || 0,
+          totalUsers: data.totalUsers || 0,
+        });
+      }
+    } catch (error) {
+      console.error('获取统计数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
       <Link href="/community-stats">
         <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <CardHeader className="pb-3">
@@ -134,35 +215,61 @@ export function SideBar() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="text-center p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
-                <div className="text-2xl font-bold text-primary">1,234</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  活跃邻居
-                </div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-accent/5 hover:bg-accent/10 transition-colors">
-                <div className="text-2xl font-bold text-accent-foreground">56</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  今日发帖
-                </div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors">
-                <div className="text-2xl font-bold text-orange-600">12</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  正在进行活动
-                </div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
-                <div className="text-2xl font-bold text-green-600">8</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  认证商家
-                </div>
-              </div>
+            <div className="text-center py-4 text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-xs">加载中...</p>
             </div>
           </CardContent>
         </Card>
       </Link>
-    </aside>
+    );
+  }
+
+  return (
+    <Link href="/community-stats">
+      <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">
+            📊 社区概况
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
+              <div className="text-2xl font-bold text-primary">
+                {stats.activeUsers.toLocaleString()}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                7 日活跃
+              </div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-accent/5 hover:bg-accent/10 transition-colors">
+              <div className="text-2xl font-bold text-accent-foreground">
+                {stats.postsToday}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                今日发帖
+              </div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors">
+              <div className="text-2xl font-bold text-orange-600">
+                {stats.totalPosts.toLocaleString()}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                总帖子数
+              </div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
+              <div className="text-2xl font-bold text-green-600">
+                {stats.totalUsers.toLocaleString()}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                总用户数
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
