@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToastProvider, useToast } from "@/components/ui/toast";
+import { AnnouncementEditor } from "@/components/AnnouncementEditor";
 
 interface Announcement {
   id: string;
@@ -213,6 +214,18 @@ function AnnouncementManagementInner() {
           </Card>
         )}
       </div>
+
+      {/* 公告编辑器 */}
+      {showEditor && (
+        <AnnouncementEditor
+          editingAnnouncement={editingAnnouncement}
+          onClose={() => {
+            setShowEditor(false);
+            setEditingAnnouncement(null);
+          }}
+          onSuccess={fetchAnnouncements}
+        />
+      )}
     </div>
   );
 }
