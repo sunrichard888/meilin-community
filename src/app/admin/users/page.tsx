@@ -29,7 +29,8 @@ function UserManagementInner() {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const { getCurrentToken } = await import('@/lib/auth-check');
+      const token = await getCurrentToken();
       
       if (!token) {
         window.location.href = '/login?redirect=/admin/users';
@@ -61,7 +62,8 @@ function UserManagementInner() {
 
   const handleToggleRole = async (userId: string, currentRole: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const { getCurrentToken } = await import('@/lib/auth-check');
+      const token = await getCurrentToken();
       const newRole = currentRole === 'admin' ? 'user' : 'admin';
 
       const res = await fetch(`/api/admin/users/${userId}`, {
@@ -93,7 +95,8 @@ function UserManagementInner() {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const { getCurrentToken } = await import('@/lib/auth-check');
+      const token = await getCurrentToken();
       
       const res = await fetch(`/api/admin/users/${userId}`, {
         method: 'DELETE',

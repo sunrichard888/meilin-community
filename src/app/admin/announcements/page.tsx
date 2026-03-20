@@ -32,7 +32,8 @@ function AnnouncementManagementInner() {
 
   const fetchAnnouncements = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const { getCurrentToken } = await import('@/lib/auth-check');
+      const token = await getCurrentToken();
       
       if (!token) {
         window.location.href = '/login?redirect=/admin/announcements';
@@ -63,7 +64,8 @@ function AnnouncementManagementInner() {
     if (!confirm('确定要删除这个公告吗？')) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const { getCurrentToken } = await import('@/lib/auth-check');
+      const token = await getCurrentToken();
       
       const res = await fetch(`/api/announcements/${id}`, {
         method: 'DELETE',
@@ -88,7 +90,8 @@ function AnnouncementManagementInner() {
 
   const handleTogglePin = async (id: string, isPinned: boolean) => {
     try {
-      const token = localStorage.getItem('token');
+      const { getCurrentToken } = await import('@/lib/auth-check');
+      const token = await getCurrentToken();
       
       const res = await fetch(`/api/announcements/${id}`, {
         method: 'PUT',

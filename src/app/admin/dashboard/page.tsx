@@ -37,7 +37,8 @@ function AdminDashboardInner() {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const { getCurrentToken } = await import('@/lib/auth-check');
+      const token = await getCurrentToken();
       
       if (!token) {
         window.location.href = '/login?redirect=/admin/dashboard';

@@ -36,7 +36,8 @@ function ModerationInner() {
 
   const fetchReports = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const { getCurrentToken } = await import('@/lib/auth-check');
+      const token = await getCurrentToken();
       
       if (!token) {
         window.location.href = '/login?redirect=/admin/moderation';
@@ -65,7 +66,8 @@ function ModerationInner() {
 
   const handleResolve = async (reportId: string, action: 'delete' | 'ignore') => {
     try {
-      const token = localStorage.getItem('token');
+      const { getCurrentToken } = await import('@/lib/auth-check');
+      const token = await getCurrentToken();
       
       const res = await fetch(`/api/admin/reports/${reportId}`, {
         method: 'PUT',
