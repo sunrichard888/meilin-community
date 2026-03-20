@@ -38,12 +38,23 @@ function AdminDashboardInner() {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
+      
+      if (!token) {
+        window.location.href = '/login?redirect=/admin/dashboard';
+        return;
+      }
+
+      const headers: HeadersInit = { 'Authorization': `Bearer ${token}` };
 
       const [statsRes, postsRes] = await Promise.all([
         fetch('/api/admin/stats', { headers: headers as Record<string, string> }),
         fetch('/api/admin/hot-posts', { headers: headers as Record<string, string> }),
       ]);
+
+      if (statsRes.status === 401 || postsRes.status === 401) {
+        window.location.href = '/login?redirect=/admin/dashboard';
+        return;
+      }
 
       const statsData = await statsRes.json();
       const postsData = await postsRes.json();
@@ -63,6 +74,16 @@ function AdminDashboardInner() {
         <div className="container py-6">
           <Skeleton className="h-64 rounded-lg mb-6" />
           <Skeleton className="h-96" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">正在跳转登录...</p>
         </div>
       </div>
     );

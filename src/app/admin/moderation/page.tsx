@@ -27,7 +27,7 @@ interface Report {
 export default function ModerationPage() {
   return (
     <ToastProvider>
-      <ModerationInner />
+      <Moderation />
     </ToastProvider>
   );
 }

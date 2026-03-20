@@ -19,7 +19,7 @@ interface User {
 export default function UserManagementPage() {
   return (
     <ToastProvider>
-      <UserManagementInner />
+      <UserManagement />
     </ToastProvider>
   );
 }
