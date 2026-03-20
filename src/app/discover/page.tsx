@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -215,10 +215,25 @@ function DiscoverContent() {
   );
 }
 
+function DiscoverPageWithSuspense() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">加载中...</p>
+        </div>
+      </div>
+    }>
+      <DiscoverContent />
+    </Suspense>
+  );
+}
+
 export default function DiscoverPage() {
   return (
     <ToastProvider>
-      <DiscoverContent />
+      <DiscoverPageWithSuspense />
     </ToastProvider>
   );
 }
