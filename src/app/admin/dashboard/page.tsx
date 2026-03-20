@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -194,25 +194,10 @@ function AdminDashboardInner() {
   );
 }
 
-function AdminDashboard() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">加载中...</p>
-        </div>
-      </div>
-    }>
-      <AdminDashboardInner />
-    </Suspense>
-  );
-}
-
 export default function AdminDashboardPage() {
   return (
     <ToastProvider>
-      <AdminDashboard />
+      <AdminDashboardInner />
     </ToastProvider>
   );
 }
