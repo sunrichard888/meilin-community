@@ -23,7 +23,7 @@ interface Announcement {
 export default function AnnouncementManagementPage() {
   return (
     <ToastProvider>
-      <AnnouncementManagement />
+      <AnnouncementManagementInner />
     </ToastProvider>
   );
 }
