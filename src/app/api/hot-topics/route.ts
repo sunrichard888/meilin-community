@@ -30,8 +30,11 @@ export async function GET() {
     console.log('Fetched posts:', posts?.length);
 
     if (!posts || posts.length === 0) {
+      console.log('No posts found');
       return NextResponse.json([]);
     }
+
+    console.log('Processing posts:', posts.length);
 
     // 按分类统计
     const categoryStats = new Map<string, { 
@@ -77,7 +80,7 @@ export async function GET() {
 
     // 转换为数组并排序
     const topics = Array.from(categoryStats.entries())
-      .map(([category, stats], index) => {
+      .map(([category, stats]) => {
         const trend = stats.thisWeek > stats.lastWeek ? 'up' as const 
           : stats.thisWeek < stats.lastWeek ? 'down' as const 
           : 'stable' as const;
@@ -92,11 +95,12 @@ export async function GET() {
           posts: stats.posts,
           likes: stats.likes,
           trend,
-          rank: index + 1,
         };
       })
-      .sort((a, b) => b.posts - a.posts);
+      .sort((a, b) => b.posts - a.posts)
+      .map((topic, index) => ({ ...topic, rank: index + 1 }));
 
+    console.log('Returning topics:', topics.length);
     return NextResponse.json(topics);
   } catch (error) {
     console.error('Error fetching hot topics:', error);
