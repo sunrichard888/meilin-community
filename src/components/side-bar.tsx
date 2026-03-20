@@ -187,7 +187,7 @@ function CommunityStatsCard() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/admin/stats');
+      const response = await fetch('/api/community-stats');
       const data = await response.json();
       
       if (response.ok) {
