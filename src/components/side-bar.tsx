@@ -5,12 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
-const hotTopics = [
-  { icon: "🔥", title: "本周热门", count: 128 },
-  { icon: "🏪", title: "二手闲置", count: 45 },
-  { icon: "🆘", title: "邻里互助", count: 32 },
-  { icon: "🎉", title: "社区活动", count: 18 },
-  { icon: "🐕", title: "宠物交友", count: 24 },
+interface HotTopic {
+  icon: string;
+  title: string;
+  count: number;
+  category?: string;
+}
+
+const defaultHotTopics: HotTopic[] = [
+  { icon: "🔥", title: "全部帖子", count: 0 },
+  { icon: "🏪", title: "二手闲置", count: 0 },
+  { icon: "🆘", title: "邻里互助", count: 0 },
+  { icon: "🎉", title: "社区活动", count: 0 },
+  { icon: "🐕", title: "宠物交友", count: 0 },
 ];
 
 interface Announcement {
@@ -41,12 +48,58 @@ function timeAgo(dateString: string): string {
 }
 
 export function SideBar() {
+  const [hotTopics, setHotTopics] = useState<HotTopic[]>(defaultHotTopics);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    fetchHotTopics();
     fetchAnnouncements();
   }, []);
+
+  const fetchHotTopics = async () => {
+    try {
+      const response = await fetch('/api/posts/categories');
+      const data = await response.json();
+      
+      if (response.ok && data.categories) {
+        // 映射 API 数据到显示格式
+        const categoryIcons: Record<string, string> = {
+          all: "🔥",
+          marketplace: "🏪",
+          help: "🆘",
+          event: "🎉",
+          pets: "🐕",
+          emergency: "🚨",
+          notice: "📢",
+        };
+
+        const categoryNames: Record<string, string> = {
+          all: "全部帖子",
+          marketplace: "二手闲置",
+          help: "邻里互助",
+          event: "社区活动",
+          pets: "宠物交友",
+          emergency: "紧急通知",
+          notice: "公告通知",
+        };
+
+        const topics: HotTopic[] = data.categories.map((cat: any) => ({
+          icon: categoryIcons[cat.category] || "📌",
+          title: categoryNames[cat.category] || cat.category,
+          count: cat.count,
+          category: cat.category,
+        }));
+
+        // 确保至少有默认数据
+        if (topics.length > 0) {
+          setHotTopics(topics.slice(0, 5));
+        }
+      }
+    } catch (error) {
+      console.error('获取热门话题失败:', error);
+    }
+  };
 
   const fetchAnnouncements = async () => {
     try {
