@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ToastProvider } from "@/components/ui/toast";
 import Link from "next/link";
 import LikeButton from "@/components/like-button";
 import CommentsSection from "@/components/comments-section";
@@ -204,7 +205,7 @@ function PostContent() {
   );
 }
 
-export default function PostPage() {
+function PostPageWithSuspense() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
@@ -216,5 +217,13 @@ export default function PostPage() {
     }>
       <PostContent />
     </Suspense>
+  );
+}
+
+export default function PostPage() {
+  return (
+    <ToastProvider>
+      <PostPageWithSuspense />
+    </ToastProvider>
   );
 }

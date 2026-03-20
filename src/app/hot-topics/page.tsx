@@ -119,7 +119,7 @@ export default function HotTopicsPage() {
                 {topics.map((topic) => (
                   <Link
                     key={topic.category}
-                    href={`/feed?category=${topic.category}`}
+                    href={`/dashboard?category=${topic.category}`}
                     className="block p-4 rounded-lg border hover:shadow-md transition-shadow cursor-pointer"
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -222,7 +222,7 @@ export default function HotTopicsPage() {
               {Object.entries(CATEGORY_LABELS).map(([category, { label, emoji }]) => (
                 <Link
                   key={category}
-                  href={`/feed?category=${category}`}
+                  href={`/dashboard?category=${category}`}
                   className="text-center p-4 rounded-lg border hover:bg-muted transition-colors"
                 >
                   <div className="text-2xl mb-2">{emoji}</div>
