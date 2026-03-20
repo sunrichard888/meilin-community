@@ -217,7 +217,7 @@ export default function CommunityStatsPage() {
                   {communities.map((community) => (
                     <Link
                       key={community.rank}
-                      href={`/feed?community=${encodeURIComponent(community.name)}`}
+                      href={`/?community=${encodeURIComponent(community.name)}`}
                       className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -305,32 +305,32 @@ export default function CommunityStatsPage() {
           <CardContent className="pt-6">
             <h2 className="text-lg font-semibold mb-4">📈 分类统计</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <Link href="/feed?category=emergency" className="text-center p-4 rounded-lg bg-red-50 hover:bg-red-100 transition-colors">
+              <Link href="/?category=emergency" className="text-center p-4 rounded-lg bg-red-50 hover:bg-red-100 transition-colors">
                 <div className="text-2xl mb-1">🚨</div>
                 <div className="text-sm font-medium">紧急通知</div>
                 <div className="text-xs text-muted-foreground mt-1">待统计</div>
               </Link>
-              <Link href="/feed?category=marketplace" className="text-center p-4 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors">
+              <Link href="/?category=marketplace" className="text-center p-4 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors">
                 <div className="text-2xl mb-1">🏪</div>
                 <div className="text-sm font-medium">二手闲置</div>
                 <div className="text-xs text-muted-foreground mt-1">待统计</div>
               </Link>
-              <Link href="/feed?category=help" className="text-center p-4 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors">
+              <Link href="/?category=help" className="text-center p-4 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors">
                 <div className="text-2xl mb-1">🆘</div>
                 <div className="text-sm font-medium">邻里互助</div>
                 <div className="text-xs text-muted-foreground mt-1">待统计</div>
               </Link>
-              <Link href="/feed?category=event" className="text-center p-4 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors">
+              <Link href="/?category=event" className="text-center p-4 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors">
                 <div className="text-2xl mb-1">🎉</div>
                 <div className="text-sm font-medium">社区活动</div>
                 <div className="text-xs text-muted-foreground mt-1">待统计</div>
               </Link>
-              <Link href="/feed?category=pets" className="text-center p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
+              <Link href="/?category=pets" className="text-center p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
                 <div className="text-2xl mb-1">🐕</div>
                 <div className="text-sm font-medium">宠物交友</div>
                 <div className="text-xs text-muted-foreground mt-1">待统计</div>
               </Link>
-              <Link href="/feed?category=food" className="text-center p-4 rounded-lg bg-pink-50 hover:bg-pink-100 transition-colors">
+              <Link href="/?category=food" className="text-center p-4 rounded-lg bg-pink-50 hover:bg-pink-100 transition-colors">
                 <div className="text-2xl mb-1">🍳</div>
                 <div className="text-sm font-medium">美食分享</div>
                 <div className="text-xs text-muted-foreground mt-1">待统计</div>
